@@ -102,7 +102,12 @@ class FAISSManager:
         if not self.s3_bucket:
             return "No S3 bucket specified, index not saved"
             
-        s3 = boto3.client('s3')
+        import os
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+        )
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         index_bytes = faiss.serialize_index(self.index)
@@ -126,7 +131,11 @@ class FAISSManager:
         if not self.s3_bucket:
             raise ValueError("No S3 bucket specified")
             
-        s3 = boto3.client('s3')
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+        )
         
         index_response = s3.get_object(Bucket=self.s3_bucket, Key=index_key)
         index_bytes = index_response['Body'].read()

@@ -18,9 +18,12 @@ class BedrockHelper:
         Args:
             region_name: AWS region name
         """
+        import os
         self.bedrock_runtime = boto3.client(
             service_name='bedrock-runtime',
-            region_name=region_name
+            region_name=region_name,
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
         )
     
     def invoke_model(self, 

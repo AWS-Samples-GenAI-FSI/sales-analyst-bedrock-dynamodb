@@ -11,7 +11,12 @@ load_dotenv()
 
 def create_ssm_role():
     """Create IAM role for SSM access."""
-    iam = boto3.client('iam', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    iam = boto3.client(
+        'iam', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         # Check if role exists
@@ -60,7 +65,12 @@ def create_ssm_role():
 
 def create_key_pair():
     """Create SSH key pair for bastion host."""
-    ec2 = boto3.client('ec2', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    ec2 = boto3.client(
+        'ec2', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         # Check if key pair exists
@@ -84,7 +94,12 @@ def create_key_pair():
 
 def create_bastion_host():
     """Create EC2 bastion host for SSH tunnel."""
-    ec2 = boto3.client('ec2', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    ec2 = boto3.client(
+        'ec2', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         # Create SSM role and key pair
@@ -136,7 +151,12 @@ sleep 30
         
         # Wait for SSM agent to be ready
         print("Waiting for SSM agent to be ready...")
-        ssm = boto3.client('ssm', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+        ssm = boto3.client(
+            'ssm', 
+            region_name=os.getenv('AWS_REGION', 'us-east-1'),
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+        )
         
         # Wait up to 8 minutes for SSM agent to connect (longer for new instance)
         for i in range(48):  # 48 attempts, 10 seconds each = 8 minutes
@@ -199,7 +219,12 @@ def create_ssm_tunnel(instance_id, redshift_host):
     time.sleep(30)
     
     # Test SSM connectivity
-    ssm = boto3.client('ssm', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    ssm = boto3.client(
+        'ssm', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     try:
         response = ssm.describe_instance_information(
             Filters=[{'Key': 'InstanceIds', 'Values': [instance_id]}]
@@ -279,8 +304,18 @@ def create_redshift_cluster():
     import threading
     from .northwind_bootstrapper import download_northwind_data
     
-    redshift = boto3.client('redshift', region_name=os.getenv('AWS_REGION', 'us-east-1'))
-    ec2 = boto3.client('ec2', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    redshift = boto3.client(
+        'redshift', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
+    ec2 = boto3.client(
+        'ec2', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     cluster_id = 'sales-analyst-cluster'
     
     # Start data download in background
