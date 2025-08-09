@@ -19,9 +19,21 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 
 2. **Configure AWS credentials:**
    ```bash
-   cp .env.example .env
-   # Edit .env with your AWS credentials
+   # Copy the environment template
+   cp .env .env.local
+   
+   # Edit .env with your AWS credentials:
+   AWS_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=your_aws_access_key_here
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_key_here
    ```
+   
+   **Where to get AWS credentials:**
+   - Go to [AWS IAM Console](https://console.aws.amazon.com/iam/)
+   - Create new user or use existing user
+   - Attach policies: `AmazonRedshiftFullAccess`, `AmazonEC2FullAccess`, `IAMFullAccess`, `AmazonSSMFullAccess`
+   - Generate Access Key ID and Secret Access Key
+   - Copy values to `.env` file
 
 3. **Run the app:**
    ```bash
@@ -62,9 +74,11 @@ python cleanup.py
 - **Total: ~$0.26/hour** (remember to cleanup!)
 
 ### Troubleshooting:
-- If setup fails, run `python cleanup.py` and try again
-- Ensure AWS credentials have proper permissions
-- Check AWS region is set correctly in `.env`
+- **Setup fails**: Run `python cleanup.py` and try again
+- **Permission errors**: Ensure your AWS user has the required IAM policies listed above
+- **Region issues**: Check `AWS_REGION` is set correctly in `.env`
+- **Credential errors**: Verify `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are correct in `.env`
+- **Connection timeout**: Try a different AWS region (us-west-2, eu-west-1)
 
 ---
 **Built with:** Amazon Bedrock • Amazon Redshift • LangGraph • Streamlit
