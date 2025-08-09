@@ -11,13 +11,18 @@ load_dotenv()
 
 def cleanup_redshift():
     """Delete Redshift cluster."""
-    redshift = boto3.client('redshift', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    redshift = boto3.client(
+        'redshift', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         # Delete cluster
         redshift.delete_cluster(
             ClusterIdentifier='sales-analyst-cluster',
-            SkipFinalSnapshot=True
+            SkipFinalClusterSnapshot=True
         )
         print("✅ Redshift cluster deletion initiated")
     except Exception as e:
@@ -25,7 +30,12 @@ def cleanup_redshift():
 
 def cleanup_ec2():
     """Delete EC2 bastion host."""
-    ec2 = boto3.client('ec2', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    ec2 = boto3.client(
+        'ec2', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         # Find and terminate bastion instance
@@ -45,7 +55,12 @@ def cleanup_ec2():
 
 def cleanup_iam():
     """Delete IAM role and instance profile."""
-    iam = boto3.client('iam', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    iam = boto3.client(
+        'iam', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         # Remove role from instance profile
@@ -71,7 +86,12 @@ def cleanup_iam():
 
 def cleanup_keypair():
     """Delete SSH key pair."""
-    ec2 = boto3.client('ec2', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    ec2 = boto3.client(
+        'ec2', 
+        region_name=os.getenv('AWS_REGION', 'us-east-1'),
+        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+    )
     
     try:
         ec2.delete_key_pair(KeyName='sales-analyst-key')
