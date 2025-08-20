@@ -3,82 +3,167 @@
 
 A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyze sales data using natural language queries.
 
-## Quick Start for Colleagues
+## Step-by-Step Setup Guide
 
 ### Prerequisites
-- AWS Account with programmatic access
-- Python 3.8+ installed
-- AWS CLI configured (`aws configure`)
+- AWS Account (if you don't have one, [create here](https://aws.amazon.com/free/))
+- Python 3.8+ installed on your computer
+- Basic command line knowledge
 
-### Setup (5 minutes)
+### Step 1: Create AWS User with Required Permissions
 
-1. **Install dependencies:**
+1. **Login to AWS Console:**
+   - Go to [AWS Console](https://console.aws.amazon.com/)
+   - Sign in with your AWS account
+
+2. **Create IAM User:**
+   - Navigate to [IAM Console](https://console.aws.amazon.com/iam/)
+   - Click "Users" → "Create user"
+   - Enter username (e.g., `sales-analyst-user`)
+   - Select "Programmatic access"
+
+3. **Attach Required Policies:**
+   - Click "Attach policies directly"
+   - Search and select these policies:
+     - `AmazonRedshiftFullAccess`
+     - `AmazonEC2FullAccess` 
+     - `IAMFullAccess`
+     - `AmazonSSMFullAccess`
+     - `AmazonBedrockFullAccess`
+   - Click "Next" → "Create user"
+
+4. **Get Your Credentials:**
+   - After user creation, click "Create access key"
+   - Choose "Application running outside AWS"
+   - Copy your **Access Key ID** and **Secret Access Key**
+   - ⚠️ **Save these safely - you won't see the secret key again!**
+
+### Step 2: Download and Setup the Application
+
+1. **Clone or Download:**
+   ```bash
+   git clone https://github.com/AWS-Samples-GenAI-FSI/Sales-Analyst-Bedrock-Redshift-.git
+   cd Sales-Analyst-Bedrock-Redshift-
+   ```
+
+2. **Install Python Dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Configure AWS credentials:**
-   ```bash
-   # Copy the environment template
-   cp .env .env.local
-   
-   # Edit .env with your AWS credentials:
-   AWS_REGION=us-east-1
-   AWS_ACCESS_KEY_ID=your_aws_access_key_here
-   AWS_SECRET_ACCESS_KEY=your_aws_secret_key_here
-   ```
-   
-   **Where to get AWS credentials:**
-   - Go to [AWS IAM Console](https://console.aws.amazon.com/iam/)
-   - Create new user or use existing user
-   - Attach policies: `AmazonRedshiftFullAccess`, `AmazonEC2FullAccess`, `IAMFullAccess`, `AmazonSSMFullAccess`
-   - Generate Access Key ID and Secret Access Key
-   - Copy values to `.env` file
+### Step 3: Configure Your AWS Credentials
 
-3. **Run the app:**
+1. **Open the `.env` file** in any text editor
+
+2. **Replace the placeholders** with your actual AWS credentials:
+   ```bash
+   # Replace these with your actual values from Step 1
+   AWS_REGION=us-east-1
+   AWS_ACCESS_KEY_ID=AKIA... # Your actual Access Key ID
+   AWS_SECRET_ACCESS_KEY=... # Your actual Secret Access Key
+   ```
+
+3. **Save the file**
+
+### Step 4: Run the Application
+
+1. **Start the app:**
    ```bash
    streamlit run app.py
    ```
 
-### What happens automatically:
-- ✅ Creates Redshift cluster in your AWS account
-- ✅ Sets up EC2 bastion host with SSM tunnel  
-- ✅ Downloads complete Northwind dataset from GitHub
-- ✅ Loads data into Redshift with proper relationships
-- ✅ Configures AI workflow and vector store
-- ✅ Ready to query with natural language!
+2. **Wait for automatic setup** (first run takes 5-10 minutes):
+   - ✅ Creates Redshift cluster
+   - ✅ Sets up EC2 bastion host
+   - ✅ Downloads Northwind sample data
+   - ✅ Loads data into Redshift
+   - ✅ Configures AI components
 
-### Sample Questions:
+3. **Open your browser** to the URL shown (usually `http://localhost:8501`)
+
+### Step 5: Start Analyzing Your Data!
+
+Once setup is complete, you can ask questions like:
+
+**Sample Questions:**
 - "What are the top 5 customers by order value?"
 - "Count the number of orders by country"
 - "What's the average order value by customer?"
 - "Which products are most popular?"
 - "Show me sales trends by month"
 
-### Features:
-- 🤖 Natural language to SQL conversion
-- 📊 Complete Northwind dataset (91 customers, 830 orders, 2155 order details)
-- 🔄 Automatic infrastructure setup
-- 📈 Rich data analysis and insights
-- 🚀 Fast queries after initial setup
+## What You Get
 
-### Cleanup:
-When done, remove AWS resources:
+- 🤖 **Natural Language Queries:** Ask questions in plain English
+- 📊 **Complete Sample Dataset:** 91 customers, 830 orders, 2155 order details
+- 🔄 **Automatic Setup:** No manual database configuration needed
+- 📈 **AI-Powered Analysis:** Get insights and explanations
+- 🚀 **Fast Performance:** Optimized for quick responses
+
+## Important Notes
+
+### AWS Costs
+- **Redshift cluster:** ~$0.25/hour
+- **EC2 bastion:** ~$0.01/hour
+- **Total:** ~$0.26/hour
+- ⚠️ **Remember to run cleanup when done!**
+
+### Security
+- Never commit your `.env` file with real credentials to git
+- Your AWS credentials stay on your local machine
+- All AWS resources are created in your own account
+
+## Cleanup (Important!)
+
+**When you're done, always run cleanup to avoid charges:**
 ```bash
 python cleanup.py
 ```
 
-### Estimated AWS Costs:
-- Redshift cluster: ~$0.25/hour
-- EC2 bastion: ~$0.01/hour
-- **Total: ~$0.26/hour** (remember to cleanup!)
+This removes:
+- ✅ Redshift cluster
+- ✅ EC2 instances
+- ✅ IAM roles
+- ✅ SSH keys
+- ✅ All AWS resources
 
-### Troubleshooting:
-- **Setup fails**: Run `python cleanup.py` and try again
-- **Permission errors**: Ensure your AWS user has the required IAM policies listed above
-- **Region issues**: Check `AWS_REGION` is set correctly in `.env`
-- **Credential errors**: Verify `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are correct in `.env`
-- **Connection timeout**: Try a different AWS region (us-west-2, eu-west-1)
+## Troubleshooting
+
+### Common Issues
+
+**"Permission denied" errors:**
+- Verify your IAM user has all required policies attached
+- Check your Access Key ID and Secret Access Key are correct
+
+**"Setup fails" or timeouts:**
+- Run `python cleanup.py` first
+- Try a different AWS region in `.env` (us-west-2, eu-west-1)
+- Ensure you have sufficient AWS service limits
+
+**"Credentials not found":**
+- Make sure `.env` file is in the same directory as `app.py`
+- Verify no extra spaces in your credential values
+- Check that you saved the `.env` file after editing
+
+**App won't start:**
+- Ensure Python 3.8+ is installed: `python --version`
+- Install requirements: `pip install -r requirements.txt`
+- Try: `python -m streamlit run app.py`
+
+### Getting Help
+- Check AWS CloudFormation console for detailed error messages
+- Review AWS costs in Billing console
+- Ensure your AWS account has no service limits blocking resource creation
+
+## Architecture
+
+**Built with:**
+- **Amazon Bedrock:** AI/ML models for natural language processing
+- **Amazon Redshift:** Data warehouse for fast analytics
+- **FAISS:** Vector database for semantic search
+- **Streamlit:** Web interface
+- **LangGraph:** Workflow orchestration
 
 ---
-**Built with:** Amazon Bedrock • Amazon Redshift • LangGraph • Streamlit
+
+**Need help?** Open an issue on GitHub or check the troubleshooting section above.
