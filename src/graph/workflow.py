@@ -52,20 +52,7 @@ Return as JSON with these fields.
         try:
             response = self.bedrock.invoke_model(prompt)
             
-            # Log to monitoring if available
-            if self.monitor and self.monitor.enabled:
-                try:
-                    self.monitor.log_interaction(
-                        prompt=prompt,
-                        response=response,
-                        metadata={
-                            "step_name": "understand_query",
-                            "query": query
-                        },
-                        trace_id=state.get('trace_id')
-                    )
-                except Exception as e:
-                    print(f"Error logging to LangFuse: {str(e)}")
+
             
             # Parse the response as JSON
             try:
@@ -131,20 +118,7 @@ Return as JSON with these fields.
                         "steps_completed": state.get("steps_completed", []) + ["retrieve_context", "fallback_context"]
                     }
             
-            # Log to monitoring if available
-            if self.monitor and self.monitor.enabled:
-                try:
-                    self.monitor.log_interaction(
-                        prompt=query,
-                        response=str(similar_docs),
-                        metadata={
-                            "step_name": "retrieve_context",
-                            "num_results": len(similar_docs)
-                        },
-                        trace_id=state.get('trace_id')
-                    )
-                except Exception as e:
-                    print(f"Error logging to LangFuse: {str(e)}")
+
             
             return {
                 **state,
@@ -243,20 +217,7 @@ Generate ONLY the SQL query without any explanation.
         try:
             sql = self.bedrock.invoke_model(prompt)
             
-            # Log to monitoring if available
-            if self.monitor and self.monitor.enabled:
-                try:
-                    self.monitor.log_interaction(
-                        prompt=prompt,
-                        response=sql,
-                        metadata={
-                            "step_name": "generate_sql",
-                            "query": query
-                        },
-                        trace_id=state.get('trace_id')
-                    )
-                except Exception as e:
-                    print(f"Error logging to LangFuse: {str(e)}")
+
             
             # Remove any USE DATABASE statements
             sql_lines = [line for line in sql.split('\n') if not line.strip().upper().startswith('USE DATABASE')]
@@ -295,19 +256,7 @@ Generate ONLY the SQL query without any explanation.
         if not results:
             analysis = "No results found for this query."
             
-            if self.monitor and self.monitor.enabled:
-                try:
-                    self.monitor.log_interaction(
-                        prompt=query,
-                        response=analysis,
-                        metadata={
-                            "step_name": "analyze_results",
-                            "results_count": 0
-                        },
-                        trace_id=state.get('trace_id')
-                    )
-                except Exception as e:
-                    print(f"Error logging to LangFuse: {str(e)}")
+
                 
             return {
                 **state,
@@ -335,20 +284,7 @@ Provide a clear, concise analysis that directly answers the question. Include ke
         try:
             analysis = self.bedrock.invoke_model(prompt)
             
-            # Log to monitoring if available
-            if self.monitor and self.monitor.enabled:
-                try:
-                    self.monitor.log_interaction(
-                        prompt=prompt,
-                        response=analysis,
-                        metadata={
-                            "step_name": "analyze_results",
-                            "results_count": len(results)
-                        },
-                        trace_id=state.get('trace_id')
-                    )
-                except Exception as e:
-                    print(f"Error logging to LangFuse: {str(e)}")
+
             
             return {
                 **state,
@@ -374,18 +310,7 @@ Provide a clear, concise analysis that directly answers the question. Include ke
         """
         error = state.get('error', 'Unknown error')
         
-        # Log to monitoring if available
-        if self.monitor and self.monitor.enabled:
-            try:
-                self.monitor.log_error(
-                    error_message=error,
-                    metadata={
-                        "query": state.get('query', ''),
-                        "steps_completed": state.get('steps_completed', [])
-                    }
-                )
-            except Exception as e:
-                print(f"Error logging error to LangFuse: {str(e)}")
+
         
         # Generate a user-friendly error message
         prompt = f"""An error occurred while processing this query:
@@ -420,20 +345,10 @@ Generate a user-friendly error message explaining what went wrong and suggesting
         Returns:
             Final workflow state
         """
-        # Create trace ID for monitoring
-        trace_id = None
-        if self.monitor and self.monitor.enabled:
-            try:
-                from uuid import uuid4
-                trace_id = f"workflow-{uuid4()}"
-            except Exception:
-                pass
-        
         # Initialize state
         state = {
             "query": query,
             "timestamp": datetime.now().isoformat(),
-            "trace_id": trace_id,
             "steps_completed": []
         }
         
@@ -466,26 +381,6 @@ Generate a user-friendly error message explaining what went wrong and suggesting
         elif "error" in state:
             state = self.handle_error(state)
         
-        # Log complete workflow to monitoring
-        if self.monitor and self.monitor.enabled:
-            try:
-                steps = []
-                for step in state.get("steps_completed", []):
-                    step_data = {
-                        "name": step
-                    }
-                    steps.append(step_data)
-                    
-                self.monitor.log_workflow(
-                    workflow_name="analysis_workflow",
-                    steps=steps,
-                    metadata={
-                        "query": query,
-                        "execution_time": state.get("execution_time"),
-                        "error": state.get("error")
-                    }
-                )
-            except Exception as e:
-                print(f"Error logging workflow to LangFuse: {str(e)}")
+
         
         return state

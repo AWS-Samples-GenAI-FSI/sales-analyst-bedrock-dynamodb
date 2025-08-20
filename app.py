@@ -16,7 +16,7 @@ load_dotenv()
 # Import components
 from src.bedrock.bedrock_helper import BedrockHelper
 from src.vector_store.faiss_manager import FAISSManager
-from src.monitoring.langfuse_monitor import LangfuseMonitor
+
 from src.graph.workflow import AnalysisWorkflow
 from src.utils.redshift_connector import (
     get_redshift_connection, 
@@ -48,21 +48,8 @@ def initialize_components():
         s3_bucket=s3_bucket
     )
     
-    # Initialize monitoring
-    langfuse_public_key = os.getenv('LANGFUSE_PUBLIC_KEY', '')
-    langfuse_secret_key = os.getenv('LANGFUSE_SECRET_KEY', '')
-    langfuse_host = os.getenv('LANGFUSE_HOST', '')
-    
+    # No monitoring
     monitor = None
-    if langfuse_public_key and langfuse_secret_key:
-        try:
-            monitor = LangfuseMonitor(
-                public_key=langfuse_public_key,
-                secret_key=langfuse_secret_key,
-                host=langfuse_host if langfuse_host else None
-            )
-        except Exception as e:
-            st.sidebar.error(f"Error initializing LangFuse: {str(e)}")
     
     # Initialize workflow
     workflow = AnalysisWorkflow(
@@ -290,11 +277,7 @@ def main():
     with st.sidebar:
         st.header("Settings")
         
-        # Monitoring status
-        if components['monitor'] and components['monitor'].enabled:
-            st.success("✅ LangFuse monitoring enabled")
-        else:
-            st.warning("⚠️ LangFuse monitoring disabled")
+
         
         # Workflow status
         if components['workflow']:
@@ -350,7 +333,6 @@ def main():
             - What are the top 5 customers by order value?
             - Show me the schema of the CUSTOMERS table
             - Count the number of orders by country
-            - What's the distribution of order priorities?
             - What's the average order value by customer?
             - Which products are most popular?
             """)

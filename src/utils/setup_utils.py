@@ -105,9 +105,7 @@ def run_setup():
             'region': input("Enter AWS region (default: us-east-1): ") or 'us-east-1',
             's3_bucket': input("Enter unique S3 bucket name: "),
         },
-        'langfuse': {
-            'public_key': input("Enter LangFuse public key (optional): "),
-            'secret_key': input("Enter LangFuse secret key (optional): "),
+
         }
     }
     

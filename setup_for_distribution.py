@@ -90,10 +90,7 @@ REDSHIFT_DATABASE=sales_analyst
 REDSHIFT_USER=admin
 REDSHIFT_PASSWORD=Awsuser123$
 
-# Optional: LangFuse Monitoring
-LANGFUSE_PUBLIC_KEY=
-LANGFUSE_SECRET_KEY=
-LANGFUSE_HOST=
+
 
 # Optional: S3 Bucket for caching
 S3_BUCKET=your-bucket-name
