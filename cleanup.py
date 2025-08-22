@@ -22,7 +22,7 @@ def cleanup_redshift():
         # Delete cluster
         redshift.delete_cluster(
             ClusterIdentifier='sales-analyst-cluster',
-            SkipFinalSnapshot=True
+            SkipFinalClusterSnapshot=True
         )
         print("✅ Redshift cluster deletion initiated")
     except Exception as e:
