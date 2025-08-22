@@ -75,13 +75,8 @@ def create_northwind_schema():
 def download_northwind_data():
     """Download Northwind SQLite database with S3 fallback."""
     try:
-        # First try S3 for faster download
-        from .s3_data_manager import download_northwind_from_s3
-        sqlite_path = download_northwind_from_s3()
-        if sqlite_path:
-            return sqlite_path
-        
-        # Fallback to direct download
+        # Skip S3 download (requires specific bucket access)
+        # Use direct GitHub download instead
         temp_dir = tempfile.mkdtemp()
         sqlite_path = os.path.join(temp_dir, "northwind.db")
         
