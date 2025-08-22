@@ -8,6 +8,7 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 ### Prerequisites
 - AWS Account (if you don't have one, [create here](https://aws.amazon.com/free/))
 - Python 3.8+ installed on your computer
+- AWS Session Manager plugin (will be installed automatically, or see troubleshooting if it fails)
 - Basic command line knowledge
 
 ### Step 1: Create AWS User with Required Permissions
@@ -149,6 +150,22 @@ This removes:
 - Ensure Python 3.8+ is installed: `python --version`
 - Install requirements: `pip install -r requirements.txt`
 - Try: `python -m streamlit run app.py`
+
+**"SSM tunnel failed" or Session Manager errors:**
+- **For macOS users:**
+  ```bash
+  curl 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip' -o 'sessionmanager-bundle.zip'
+  unzip sessionmanager-bundle.zip
+  sudo ./sessionmanager-bundle/install -i /usr/local/sessionmanagerplugin -b /usr/local/bin/session-manager-plugin
+  ```
+- **For Windows users:**
+  - Download: https://s3.amazonaws.com/session-manager-downloads/plugin/latest/windows/SessionManagerPluginSetup.exe
+  - Run the installer as Administrator
+- **For Linux users:**
+  ```bash
+  curl 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb' -o 'session-manager-plugin.deb'
+  sudo dpkg -i session-manager-plugin.deb
+  ```
 
 ### Getting Help
 - Check AWS CloudFormation console for detailed error messages
