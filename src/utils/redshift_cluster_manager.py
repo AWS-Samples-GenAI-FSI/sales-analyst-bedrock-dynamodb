@@ -158,8 +158,8 @@ sleep 30
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
         )
         
-        # Wait up to 8 minutes for SSM agent to connect (longer for new instance)
-        for i in range(48):  # 48 attempts, 10 seconds each = 8 minutes
+        # Wait up to 10 minutes for SSM agent to connect (longer for new instance)
+        for i in range(60):  # 60 attempts, 10 seconds each = 10 minutes
             try:
                 response = ssm.describe_instance_information(
                     Filters=[{'Key': 'InstanceIds', 'Values': [instance_id]}]
@@ -169,13 +169,17 @@ sleep 30
                     if instance_info['PingStatus'] == 'Online':
                         print(f"SSM agent is online after {i*10} seconds")
                         break
-                print(f"Waiting for SSM agent... ({i*10}s)")
+                if i < 5:  # Only show first few messages to reduce noise
+                    print(f"Waiting for SSM agent... ({i*10}s)")
+                elif i % 6 == 0:  # Show progress every minute after first 50 seconds
+                    print(f"Still waiting for SSM agent... ({i*10}s elapsed)")
                 time.sleep(10)
             except Exception as e:
-                print(f"Checking SSM status: {e}")
+                if i < 3:  # Only show first few errors
+                    print(f"Checking SSM status: {e}")
                 time.sleep(10)
         else:
-            print("SSM agent did not come online within 5 minutes")
+            print("SSM agent did not come online within 10 minutes")
         
         # Return instance ID for SSM
         return instance_id
@@ -215,8 +219,9 @@ def create_ssm_tunnel(instance_id, redshift_host):
     subprocess.run(['pkill', '-f', 'aws ssm start-session'], stderr=subprocess.DEVNULL)
     time.sleep(2)
     
-    # Wait a bit more for SSM to be fully ready
-    time.sleep(30)
+    # Wait longer for SSM to be fully ready
+    print("Allowing extra time for SSM to stabilize...")
+    time.sleep(60)
     
     # Test SSM connectivity
     ssm = boto3.client(
