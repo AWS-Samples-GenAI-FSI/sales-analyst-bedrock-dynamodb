@@ -31,6 +31,7 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
      - `IAMFullAccess`
      - `AmazonSSMFullAccess`
      - `AmazonBedrockFullAccess`
+     - `AmazonS3FullAccess`
    - Click "Next" → "Create user"
 
 4. **Get Your Credentials:**
