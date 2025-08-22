@@ -24,7 +24,7 @@ class FAISSManager:
             dimension: Dimension of the embedding vectors
         """
         self.bedrock_client = bedrock_client
-        self.s3_bucket = s3_bucket
+        self.s3_bucket = None  # S3 functionality disabled
         self.index = faiss.IndexFlatL2(dimension)
         self.texts = []
         self.metadata = []

@@ -15,7 +15,7 @@ def load_environment():
     
     return {
         'aws_region': os.getenv('AWS_REGION', 'us-east-1'),
-        's3_bucket': os.getenv('S3_BUCKET'),
+
 
     }
 

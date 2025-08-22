@@ -37,15 +37,13 @@ def initialize_components():
     """
     # Get environment variables
     aws_region = os.getenv('AWS_REGION', 'us-east-1')
-    s3_bucket = os.getenv('S3_BUCKET', 'your-bucket-name')
     
     # Initialize Bedrock client
     bedrock = BedrockHelper(region_name=aws_region)
     
     # Initialize vector store
     vector_store = FAISSManager(
-        bedrock_client=bedrock,
-        s3_bucket=s3_bucket
+        bedrock_client=bedrock
     )
     
     # No monitoring
