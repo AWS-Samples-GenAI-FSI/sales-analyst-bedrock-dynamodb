@@ -63,34 +63,7 @@ def create_ssm_role():
         print(f"Error creating SSM role: {e}")
         return False
 
-def create_key_pair():
-    """Create SSH key pair for bastion host."""
-    ec2 = boto3.client(
-        'ec2', 
-        region_name=os.getenv('AWS_REGION', 'us-east-1'),
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
-    )
-    
-    try:
-        # Check if key pair exists
-        ec2.describe_key_pairs(KeyNames=['sales-analyst-key'])
-        return True
-    except ec2.exceptions.ClientError:
-        # Create key pair
-        response = ec2.create_key_pair(KeyName='sales-analyst-key')
-        
-        # Save private key locally
-        key_path = os.path.expanduser('~/.ssh/sales-analyst-key.pem')
-        os.makedirs(os.path.dirname(key_path), exist_ok=True)
-        
-        with open(key_path, 'w') as f:
-            f.write(response['KeyMaterial'])
-        
-        # Set proper permissions
-        os.chmod(key_path, 0o600)
-        print(f"Created SSH key: {key_path}")
-        return True
+
 
 def create_bastion_host():
     """Create EC2 bastion host for SSH tunnel."""
@@ -102,9 +75,8 @@ def create_bastion_host():
     )
     
     try:
-        # Create SSM role and key pair
+        # Create SSM role only
         create_ssm_role()
-        create_key_pair()
         
         # Check if bastion exists
         response = ec2.describe_instances(
@@ -118,7 +90,7 @@ def create_bastion_host():
             instance = response['Reservations'][0]['Instances'][0]
             return instance['InstanceId']
         
-        # Create bastion host with SSM role and updated AMI
+        # Create bastion host with SSM role only (no SSH key needed)
         response = ec2.run_instances(
             ImageId='ami-0c02fb55956c7d316',  # Amazon Linux 2 (stable)
             MinCount=1,

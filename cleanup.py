@@ -84,26 +84,7 @@ def cleanup_iam():
     except Exception as e:
         print(f"⚠️ IAM cleanup: {e}")
 
-def cleanup_keypair():
-    """Delete SSH key pair."""
-    ec2 = boto3.client(
-        'ec2', 
-        region_name=os.getenv('AWS_REGION', 'us-east-1'),
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
-    )
-    
-    try:
-        ec2.delete_key_pair(KeyName='sales-analyst-key')
-        print("✅ SSH key pair deleted")
-        
-        # Remove local key file
-        key_path = os.path.expanduser('~/.ssh/sales-analyst-key.pem')
-        if os.path.exists(key_path):
-            os.remove(key_path)
-            print("✅ Local SSH key file removed")
-    except Exception as e:
-        print(f"⚠️ Key pair cleanup: {e}")
+# Key pair cleanup removed - using SSM only
 
 def cleanup_local():
     """Clean up local files."""
@@ -131,7 +112,6 @@ def main():
     cleanup_ec2()
     cleanup_redshift()
     cleanup_iam()
-    cleanup_keypair()
     
     print("\n✅ Cleanup complete! You can now restart the app for a fresh setup.")
     print("Run: streamlit run app.py")

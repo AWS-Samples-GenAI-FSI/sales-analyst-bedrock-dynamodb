@@ -125,7 +125,6 @@ This removes:
 - ✅ Redshift cluster
 - ✅ EC2 instances
 - ✅ IAM roles
-- ✅ SSH keys
 - ✅ All AWS resources
 
 ## Troubleshooting
