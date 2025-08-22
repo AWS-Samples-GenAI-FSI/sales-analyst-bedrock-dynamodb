@@ -149,8 +149,7 @@ sleep 30
         waiter = ec2.get_waiter('instance_running')
         waiter.wait(InstanceIds=[instance_id])
         
-        # Wait for SSM agent to be ready
-        print("Waiting for SSM agent to be ready...")
+        # Wait for SSM agent to be ready (silent)
         ssm = boto3.client(
             'ssm', 
             region_name=os.getenv('AWS_REGION', 'us-east-1'),
@@ -158,7 +157,7 @@ sleep 30
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
         )
         
-        # Wait up to 10 minutes for SSM agent to connect (longer for new instance)
+        # Wait up to 10 minutes for SSM agent to connect (silent)
         for i in range(60):  # 60 attempts, 10 seconds each = 10 minutes
             try:
                 response = ssm.describe_instance_information(
@@ -167,19 +166,10 @@ sleep 30
                 if response['InstanceInformationList']:
                     instance_info = response['InstanceInformationList'][0]
                     if instance_info['PingStatus'] == 'Online':
-                        print(f"SSM agent is online after {i*10} seconds")
                         break
-                if i < 5:  # Only show first few messages to reduce noise
-                    print(f"Waiting for SSM agent... ({i*10}s)")
-                elif i % 6 == 0:  # Show progress every minute after first 50 seconds
-                    print(f"Still waiting for SSM agent... ({i*10}s elapsed)")
                 time.sleep(10)
-            except Exception as e:
-                if i < 3:  # Only show first few errors
-                    print(f"Checking SSM status: {e}")
+            except Exception:
                 time.sleep(10)
-        else:
-            print("SSM agent did not come online within 10 minutes")
         
         # Return instance ID for SSM
         return instance_id
@@ -219,8 +209,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
     subprocess.run(['pkill', '-f', 'aws ssm start-session'], stderr=subprocess.DEVNULL)
     time.sleep(2)
     
-    # Wait longer for SSM to be fully ready
-    print("Allowing extra time for SSM to stabilize...")
+    # Wait for SSM to be fully ready (silent)
     time.sleep(60)
     
     # Test SSM connectivity
@@ -243,7 +232,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
             print(f"Instance SSM status: {instance_info['PingStatus']}")
             return False
         
-        print("SSM connectivity confirmed")
+        pass  # SSM ready
     except Exception as e:
         print(f"SSM connectivity check failed: {e}")
         return False
@@ -271,7 +260,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
         
         # Check if process is still running (means session is active)
         if process.poll() is None:
-            print("SSM port forwarding session started")
+            pass  # Session started
             
             # Test if port forwarding is working
             import socket
@@ -283,21 +272,19 @@ def create_ssm_tunnel(instance_id, redshift_host):
                     sock.close()
                     
                     if result == 0:
-                        print("Port forwarding is working")
                         return True
                     else:
-                        print(f"Port test attempt {i+1}/10...")
                         time.sleep(3)
                 except Exception as e:
                     print(f"Port test error: {e}")
                     time.sleep(3)
             
-            print("Port forwarding test failed")
+            pass  # Port test failed
             process.terminate()
             return False
         else:
             stdout, stderr = process.communicate()
-            print(f"SSM session failed: {stderr.decode()}")
+            pass  # Session failed
             return False
             
     except Exception as e:
@@ -376,7 +363,7 @@ def create_redshift_cluster():
                 sock.close()
                 
                 if result == 0:
-                    print("Existing tunnel is working")
+                    pass  # Tunnel working
                     return 'localhost'
             except:
                 pass
