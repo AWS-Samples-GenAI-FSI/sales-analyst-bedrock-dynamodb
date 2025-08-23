@@ -4,6 +4,7 @@ Redshift connector for the GenAI Sales Analyst application.
 import os
 import psycopg2
 from dotenv import load_dotenv
+from .auto_tunnel import ensure_tunnel
 
 # Load environment variables
 load_dotenv()
@@ -16,7 +17,10 @@ def get_redshift_connection():
         Redshift connection object
     """
     # Get credentials from environment variables
-    host = os.getenv('REDSHIFT_HOST', '<insert redshift cluster endpoint here>')
+    host = os.getenv('REDSHIFT_HOST')
+    if not host or host == 'NOT_SET':
+        raise Exception("Redshift host not configured yet. Please wait for setup to complete.")
+        
     port = os.getenv('REDSHIFT_PORT', '5439')
     database = os.getenv('REDSHIFT_DATABASE', 'sales_analyst')
     user = os.getenv('REDSHIFT_USER', 'admin')

@@ -28,6 +28,7 @@ from src.utils.redshift_connector import (
 )
 from src.utils.northwind_bootstrapper import bootstrap_northwind, check_northwind_exists
 
+
 def initialize_components():
     """
     Initialize application components.
@@ -197,16 +198,35 @@ def main():
     try:
         from src.utils.redshift_cluster_manager import create_redshift_cluster
         
-        # Create cluster if needed
-        with st.spinner("Setting up Redshift cluster..."):
-            endpoint = create_redshift_cluster()
-            if endpoint:
-                os.environ['REDSHIFT_HOST'] = endpoint
-                st.sidebar.success(f"✅ Redshift cluster ready: {endpoint}")
-            
-        conn = get_redshift_connection()
-        st.sidebar.success("✅ Connected to Redshift")
-        conn.close()
+        # Test connection first
+        try:
+            conn = get_redshift_connection()
+            conn.close()
+            st.sidebar.success("✅ Connected to Redshift")
+        except:
+            # Setup needed - do it silently
+            with st.spinner("🚀 Setting up environment..."):
+                endpoint = create_redshift_cluster()
+                if endpoint:
+                    from src.utils.auto_tunnel import ensure_tunnel
+                    tunnel_success = ensure_tunnel()
+                    if tunnel_success:
+                        os.environ['REDSHIFT_HOST'] = 'localhost'
+                    else:
+                        os.environ['REDSHIFT_HOST'] = endpoint
+                
+                # Wait for connection silently
+                for i in range(180):  # 6 minutes
+                    try:
+                        conn = get_redshift_connection()
+                        conn.close()
+                        st.sidebar.success("✅ Connected to Redshift")
+                        break
+                    except:
+                        time.sleep(2)
+                else:
+                    st.sidebar.info("🔗 Still connecting... Please refresh in a moment")
+                    st.stop()
         
         # Auto-create Northwind database if it doesn't exist
         if not check_northwind_exists():
@@ -296,16 +316,21 @@ def main():
                     st.error("❌ Failed to reload metadata")
         
         # Available data section moved to sidebar
-        st.header("Available Data")
+        st.header("📋 Available Data")
         st.markdown("""
-        - Customer information (CUSTOMERS)
-        - Order information (ORDERS)
-        - Order details (ORDER_DETAILS)
-        - Product information (PRODUCTS)
-        - Categories (CATEGORIES)
-        - Supplier information (SUPPLIERS)
-        - Employee data (EMPLOYEES)
-        - Shipping companies (SHIPPERS)
+        **🏢 Business Data:**
+        - 👥 **Customers** - Company details, contacts, locations
+        - 📦 **Orders** - Order dates, shipping info, freight costs
+        - 🛒 **Order Details** - Products, quantities, prices, discounts
+        
+        **🏭 Product Catalog:**
+        - 🎯 **Products** - Names, prices, stock levels
+        - 📂 **Categories** - Product groupings and descriptions
+        - 🚚 **Suppliers** - Vendor information and contacts
+        
+        **👨‍💼 Operations:**
+        - 👔 **Employees** - Staff details and hierarchy
+        - 🚛 **Shippers** - Delivery companies and contacts
         """)
         
         # Show available databases and schemas
@@ -326,19 +351,40 @@ def main():
         st.markdown('<p class="info-text">You can ask about customer orders, product sales, and more.</p>', unsafe_allow_html=True)
         
         # Examples
-        with st.expander("Example questions", expanded=False):
+        with st.expander("💡 Example questions", expanded=False):
             st.markdown("""
-            - What are the top 5 customers by order value?
-            - Show me the schema of the CUSTOMERS table
-            - Count the number of orders by country
-            - What's the average order value by customer?
-            - Which products are most popular?
+            **📊 Sales Analysis:**
+            - What are the top 10 customers by total order value?
+            - Which products generate the most revenue?
+            - Show me monthly sales trends for this year
+            - What's the average order value by country?
+            
+            **🛍️ Product Insights:**
+            - Which product categories sell the most?
+            - What are the top 5 most expensive products?
+            - Show me products that are frequently ordered together
+            - Which suppliers provide the most products?
+            
+            **🌍 Geographic Analysis:**
+            - How many orders come from each country?
+            - Which countries have the highest average order values?
+            - Show me shipping costs by destination country
+            
+            **👥 Customer Behavior:**
+            - Who are our most frequent customers?
+            - What's the customer lifetime value distribution?
+            - Which customers haven't ordered recently?
+            
+            **📈 Business Metrics:**
+            - What's our total revenue this year?
+            - Show me the order frequency by month
+            - Which employees process the most orders?
             """)
         
         # Question input
         question = st.text_input(
-            "Ask your question:",
-            placeholder="e.g., What are the top 5 customers by order value?"
+            "💬 Ask your question:",
+            placeholder="e.g., What are the top 10 customers by total revenue?"
         )
     
     # Process question

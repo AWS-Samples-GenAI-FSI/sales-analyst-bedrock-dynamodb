@@ -73,22 +73,35 @@ def create_northwind_schema():
         return False
 
 def download_northwind_data():
-    """Download Northwind SQLite database with S3 fallback."""
+    """Use sample Northwind data - instant local setup."""
     try:
-        # Skip S3 download (requires specific bucket access)
-        # Use direct GitHub download instead
+        # Create sample data directly - no download needed
         temp_dir = tempfile.mkdtemp()
         sqlite_path = os.path.join(temp_dir, "northwind.db")
         
-        print(f"Downloading from {NORTHWIND_DATA_URL}")
+        print("✅ Creating sample Northwind data locally...")
+        create_sample_northwind_data(sqlite_path)
+        return sqlite_path
+        
+    except Exception as e:
+        print(f"Error using bundled data: {str(e)}")
+        return download_northwind_data_fallback()
+
+def download_northwind_data_fallback():
+    """Fallback download method if bundled file fails."""
+    try:
+        temp_dir = tempfile.mkdtemp()
+        sqlite_path = os.path.join(temp_dir, "northwind.db")
+        
+        print(f"Downloading from GitHub...")
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         
         # Try multiple URLs
         urls = [
-            NORTHWIND_DATA_URL,
             "https://github.com/jpwhite3/northwind-SQLite3/raw/master/northwind.db",
+            NORTHWIND_DATA_URL,
             "https://raw.githubusercontent.com/jpwhite3/northwind-SQLite3/master/northwind.db"
         ]
         
@@ -121,7 +134,7 @@ def download_northwind_data():
         return sqlite_path
         
     except Exception as e:
-        print(f"Error downloading data: {str(e)}")
+        print(f"Error creating sample data: {str(e)}")
         traceback.print_exc()
         return None
 
