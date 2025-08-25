@@ -43,8 +43,8 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 
 1. **Clone or Download:**
    ```bash
-   git clone <your-repo-url>
-   cd sales_analyst_redshift
+   git clone https://github.com/AWS-Samples-GenAI-FSI/Sales-Analyst-Bedrock-Redshift-.git
+   cd Sales-Analyst-Bedrock-Redshift-
    ```
 
 2. **Install Python Dependencies:**
