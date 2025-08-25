@@ -4,7 +4,6 @@ Redshift connector for the GenAI Sales Analyst application.
 import os
 import psycopg2
 from dotenv import load_dotenv
-from .auto_tunnel import ensure_tunnel
 
 # Load environment variables
 load_dotenv()
