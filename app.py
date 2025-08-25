@@ -352,7 +352,7 @@ def main():
             **📊 Sales Analysis:**
             - What are the top 10 customers by total order value?
             - Which products generate the most revenue?
-            - Show me monthly sales trends for this year
+            - Show me monthly sales trends for 1997
             - What's the average order value by country?
             
             **🛍️ Product Insights:**
@@ -369,11 +369,11 @@ def main():
             **👥 Customer Behavior:**
             - Who are our most frequent customers?
             - What's the customer lifetime value distribution?
-            - Which customers haven't ordered recently?
+            - Which customers haven't ordered since 1997?
             
             **📈 Business Metrics:**
-            - What's our total revenue this year?
-            - Show me the order frequency by month
+            - What's our total revenue for 1997?
+            - Show me the order frequency by month in 1997
             - Which employees process the most orders?
             """)
         
