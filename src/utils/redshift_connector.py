@@ -26,6 +26,10 @@ def get_redshift_connection():
     user = os.getenv('REDSHIFT_USER', 'admin')
     password = os.getenv('REDSHIFT_PASSWORD', 'Awsuser123$')
     
+    # For localhost connections (SSM tunnel), force IPv4
+    if host == 'localhost':
+        host = '127.0.0.1'
+    
     # Connect to Redshift with timeout
     conn = psycopg2.connect(
         host=host,
@@ -33,7 +37,7 @@ def get_redshift_connection():
         database=database,
         user=user,
         password=password,
-        connect_timeout=10
+        connect_timeout=30  # Increased timeout for tunnel connections
     )
     
     return conn

@@ -43,8 +43,8 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 
 1. **Clone or Download:**
    ```bash
-   git clone https://github.com/AWS-Samples-GenAI-FSI/Sales-Analyst-Bedrock-Redshift-.git
-   cd Sales-Analyst-Bedrock-Redshift-
+   git clone <your-repo-url>
+   cd sales_analyst_redshift
    ```
 
 2. **Install Python Dependencies:**
@@ -54,9 +54,12 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 
 ### Step 3: Configure Your AWS Credentials
 
-1. **Open the `.env` file** in any text editor
+1. **Copy the example environment file:**
+   ```bash
+   cp .env.example .env
+   ```
 
-2. **Replace the placeholders** with your actual AWS credentials:
+2. **Open the `.env` file** in any text editor and **replace the placeholders** with your actual AWS credentials:
    ```bash
    # Replace these with your actual values from Step 1
    AWS_REGION=us-east-1
