@@ -208,12 +208,8 @@ def main():
             with st.spinner("🚀 Setting up environment..."):
                 endpoint = create_redshift_cluster()
                 if endpoint:
-                    from src.utils.auto_tunnel import ensure_tunnel
-                    tunnel_success = ensure_tunnel()
-                    if tunnel_success:
-                        os.environ['REDSHIFT_HOST'] = 'localhost'
-                    else:
-                        os.environ['REDSHIFT_HOST'] = endpoint
+                    # Tunnel is handled by cluster manager
+                    os.environ['REDSHIFT_HOST'] = endpoint if endpoint != 'localhost' else 'localhost'
                 
                 # Wait for connection silently
                 for i in range(180):  # 6 minutes
