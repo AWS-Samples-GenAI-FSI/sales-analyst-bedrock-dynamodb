@@ -351,32 +351,18 @@ def main():
         # Examples
         with st.expander("💡 Example questions", expanded=False):
             st.markdown("""
-            **📊 Sales Analysis:**
-            - What are the top 10 customers by total order value?
-            - Which products generate the most revenue?
-            - Show me monthly sales trends for 1997
-            - What's the average order value by country?
+            **✅ Try these working questions:**
             
-            **🛍️ Product Insights:**
-            - Which product categories sell the most?
-            - What are the top 5 most expensive products?
-            - Show me products that are frequently ordered together
-            - Which suppliers provide the most products?
-            
-            **🌍 Geographic Analysis:**
-            - How many orders come from each country?
-            - Which countries have the highest average order values?
-            - Show me shipping costs by destination country
-            
-            **👥 Customer Behavior:**
-            - Who are our most frequent customers?
-            - What's the customer lifetime value distribution?
-            - Which customers haven't ordered since 1997?
-            
-            **📈 Business Metrics:**
-            - What's our total revenue for 1997?
-            - Show me the order frequency by month in 1997
-            - Which employees process the most orders?
+            1. **What are the top 10 customers by total order value?**
+            2. **Which products generate the most revenue?**
+            3. **What's the average order value by country?**
+            4. **Which product categories sell the most?**
+            5. **What are the top 5 most expensive products?**
+            6. **How many orders come from each country?**
+            7. **Which countries have the highest average order values?**
+            8. **Who are our most frequent customers?**
+            9. **Which suppliers provide the most products?**
+            10. **Which employees process the most orders?**
             """)
         
         # Question input
