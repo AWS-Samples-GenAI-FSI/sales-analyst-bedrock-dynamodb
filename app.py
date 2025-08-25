@@ -77,7 +77,7 @@ def load_all_metadata(vector_store, show_progress=False):
     Columns: customerid (text), companyname (text), contactname (text), country (text)
     
     Table: orders - Order information  
-    Columns: orderid (integer), customerid (text), orderdate (text - format: YYYY-MM-DD HH:MM:SS.mmm, use CAST(orderdate AS DATE) for date operations), freight (real), shipcountry (text)
+    Columns: orderid (integer), customerid (text), orderdate (text - use CAST(orderdate AS DATE)), requireddate (text - use CAST(requireddate AS DATE)), shippeddate (text - use CAST(shippeddate AS DATE)), freight (real), shipcountry (text)
     
     Table: order_details - Order line items
     Columns: orderid (integer), productid (integer), unitprice (real), quantity (integer)
@@ -92,7 +92,7 @@ def load_all_metadata(vector_store, show_progress=False):
     Columns: supplierid (integer), companyname (text), country (text)
     
     Table: employees - Employee data
-    Columns: employeeid (integer), lastname (text), firstname (text), title (text)
+    Columns: employeeid (integer), lastname (text), firstname (text), title (text), birthdate (text - use CAST(birthdate AS DATE)), hiredate (text - use CAST(hiredate AS DATE))
     
     Table: shippers - Shipping companies
     Columns: shipperid (integer), companyname (text), phone (text)
