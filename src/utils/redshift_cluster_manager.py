@@ -64,10 +64,8 @@ def create_ssm_role():
         return False
 
 
-
 def create_bastion_host():
     """Create EC2 bastion host for SSH tunnel."""
-        
     ec2 = boto3.client(
         'ec2', 
         region_name=os.getenv('AWS_REGION', 'us-east-1'),
@@ -80,10 +78,9 @@ def create_bastion_host():
         create_ssm_role()
         
         # Check if bastion exists
-        bastion_name = 'sales-analyst-bastion'
         response = ec2.describe_instances(
             Filters=[
-                {'Name': 'tag:Name', 'Values': [bastion_name]},
+                {'Name': 'tag:Name', 'Values': ['sales-analyst-bastion']},
                 {'Name': 'instance-state-name', 'Values': ['running']}
             ]
         )
@@ -155,7 +152,7 @@ sleep 30
             'TagSpecifications': [
                 {
                     'ResourceType': 'instance',
-                    'Tags': [{'Key': 'Name', 'Value': bastion_name}]
+                    'Tags': [{'Key': 'Name', 'Value': 'sales-analyst-bastion'}]
                 }
             ]
         }
@@ -173,8 +170,7 @@ sleep 30
         waiter = ec2.get_waiter('instance_running')
         waiter.wait(InstanceIds=[instance_id])
         
-        # Wait for SSM agent to be ready
-        print("Waiting for SSM agent to be ready...")
+        # Wait for SSM agent to be ready (silent)
         ssm = boto3.client(
             'ssm', 
             region_name=os.getenv('AWS_REGION', 'us-east-1'),
@@ -182,7 +178,7 @@ sleep 30
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
         )
         
-        # Wait up to 10 minutes for SSM agent to connect
+        # Wait up to 10 minutes for SSM agent to connect (silent)
         for i in range(60):  # 60 attempts, 10 seconds each = 10 minutes
             try:
                 response = ssm.describe_instance_information(
@@ -191,16 +187,10 @@ sleep 30
                 if response['InstanceInformationList']:
                     instance_info = response['InstanceInformationList'][0]
                     if instance_info['PingStatus'] == 'Online':
-                        print(f"SSM agent is online after {i*10} seconds")
                         break
-                if i % 6 == 0:  # Show progress every minute
-                    print(f"Waiting for SSM agent... ({i*10}s elapsed)")
                 time.sleep(10)
-            except Exception as e:
-                print(f"Checking SSM status: {e}")
+            except Exception:
                 time.sleep(10)
-        else:
-            print("SSM agent did not come online within 10 minutes")
         
         # Return instance ID for SSM
         return instance_id
@@ -240,8 +230,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
     subprocess.run(['pkill', '-f', 'aws ssm start-session'], stderr=subprocess.DEVNULL)
     time.sleep(2)
     
-    # Wait for SSM to be fully ready
-    print("Allowing extra time for SSM to stabilize...")
+    # Wait for SSM to be fully ready (silent)
     time.sleep(60)
     
     # Test SSM connectivity
@@ -264,7 +253,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
             print(f"Instance SSM status: {instance_info['PingStatus']}")
             return False
         
-        print("SSM connectivity confirmed")
+        pass  # SSM ready
     except Exception as e:
         print(f"SSM connectivity check failed: {e}")
         return False
@@ -295,11 +284,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
         
         # Check if process is still running (means session is active)
         if process.poll() is None:
-<<<<<<< HEAD
-            print("SSM port forwarding session started")
-=======
             print("SSM session process is running, testing port forwarding...")
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
             
             # Test if port forwarding is working
             import socket
@@ -311,38 +296,23 @@ def create_ssm_tunnel(instance_id, redshift_host):
                     sock.close()
                     
                     if result == 0:
-<<<<<<< HEAD
-                        print("Port forwarding is working")
-                        return True
-                    else:
-                        print(f"Port test attempt {i+1}/10...")
-=======
                         print(f"✅ Port forwarding working on attempt {i+1}")
                         return True
                     else:
                         print(f"Port test {i+1}/15 failed, retrying...")
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
                         time.sleep(3)
                 except Exception as e:
                     print(f"Port test {i+1}/15 error: {e}")
                     time.sleep(3)
             
-<<<<<<< HEAD
-            print("Port forwarding test failed")
-=======
             print("❌ Port forwarding test failed after 15 attempts")
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
             process.terminate()
             return False
         else:
             stdout, stderr = process.communicate()
-<<<<<<< HEAD
-            print(f"SSM session failed: {stderr.decode()}")
-=======
             print(f"❌ SSM session failed to start")
             print(f"STDOUT: {stdout.decode() if stdout else 'None'}")
             print(f"STDERR: {stderr.decode() if stderr else 'None'}")
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
             return False
             
     except Exception as e:
@@ -352,10 +322,7 @@ def create_ssm_tunnel(instance_id, redshift_host):
 def create_redshift_cluster():
     """Create Redshift cluster and SSH tunnel if it doesn't exist."""
     import threading
-    from datetime import datetime
     from .northwind_bootstrapper import download_northwind_data
-    
-    print("🚀 Starting Redshift cluster setup...")
     
     redshift = boto3.client(
         'redshift', 
@@ -369,144 +336,19 @@ def create_redshift_cluster():
         aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
         aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
     )
-    
-    # Use simple cluster name
     cluster_id = 'sales-analyst-cluster'
-    print(f"📝 Using cluster ID: {cluster_id}")
     
     # Start data download in background
     download_result = {'path': None}
     def download_data():
-        print("📦 Loading bundled Northwind data...")
+        print("Starting parallel data download...")
         download_result['path'] = download_northwind_data()
-        print(f"✅ Data ready: {download_result['path']}")
+        print(f"Data download completed: {download_result['path']}")
     
     download_thread = threading.Thread(target=download_data, daemon=True)
     download_thread.start()
     
     try:
-<<<<<<< HEAD
-        # Check for existing sales-analyst-cluster
-        print("🔍 Checking for existing Redshift cluster...")
-        try:
-            response = redshift.describe_clusters(ClusterIdentifier=cluster_id)
-            cluster = response['Clusters'][0]
-            status = cluster['ClusterStatus']
-            print(f"📊 Found cluster {cluster_id}: {status}")
-            
-            if status == 'available':
-                print(f"✅ Cluster is available - reusing existing cluster")
-                available_cluster = cluster
-            elif status == 'deleting':
-                print(f"⏳ Cluster is deleting - waiting for completion...")
-                # Wait for deletion to complete
-                while True:
-                    try:
-                        response = redshift.describe_clusters(ClusterIdentifier=cluster_id)
-                        if response['Clusters'][0]['ClusterStatus'] == 'deleting':
-                            print(f"⏳ Still deleting... waiting 30 seconds")
-                            time.sleep(30)
-                        else:
-                            break
-                    except redshift.exceptions.ClusterNotFoundFault:
-                        print(f"✅ Cluster deletion complete")
-                        break
-                available_cluster = None
-            else:
-                print(f"⚠️ Cluster in {status} state - will wait")
-                available_cluster = None
-        except redshift.exceptions.ClusterNotFoundFault:
-            print(f"🔍 No existing cluster found")
-            available_cluster = None
-        
-        if available_cluster:
-            cluster = available_cluster
-            print(f"🔄 Reusing existing cluster: {cluster['ClusterIdentifier']}")
-            print(f"📍 Cluster endpoint: {cluster['Endpoint']['Address']}")
-            
-            # Update security group for existing cluster
-            print("🔒 Updating security group for existing cluster...")
-            try:
-                import requests
-                print("🌐 Getting local IP address...")
-                local_ip = requests.get('https://api.ipify.org').text
-                print(f"📍 Local IP: {local_ip}")
-                
-                # Get cluster's VPC security groups
-                vpc_security_groups = cluster['VpcSecurityGroups']
-                print(f"🛡️ Found {len(vpc_security_groups)} security groups")
-                
-                for sg in vpc_security_groups:
-                    sg_id = sg['VpcSecurityGroupId']
-                    print(f"   - Updating security group: {sg_id}")
-                    
-                    # Add rule to allow local IP
-                    try:
-                        ec2.authorize_security_group_ingress(
-                            GroupId=sg_id,
-                            IpPermissions=[
-                                {
-                                    'IpProtocol': 'tcp',
-                                    'FromPort': 5439,
-                                    'ToPort': 5439,
-                                    'IpRanges': [{'CidrIp': f'{local_ip}/32'}]
-                                }
-                            ]
-                        )
-                        print(f"✅ Added security group rule for IP: {local_ip}")
-                    except Exception as e:
-                        print(f"⚠️ Security group rule may already exist for IP: {local_ip} ({e})")
-            except Exception as e:
-                print(f"❌ Error updating security group: {e}")
-            
-            # Check if tunnel is already working
-            print("🔍 Checking if existing tunnel is working...")
-            import socket
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(2)
-                result = sock.connect_ex(('localhost', 5439))
-                sock.close()
-                
-                if result == 0:
-                    print("✅ Existing tunnel is working - using localhost connection")
-                    return 'localhost'
-                else:
-                    print("❌ No existing tunnel found - need to create SSM tunnel")
-            except Exception as e:
-                print(f"❌ Tunnel check failed: {e}")
-            
-            # Create bastion host and SSM tunnel only if needed
-            print("🏗️ Creating bastion host and SSM tunnel...")
-            instance_id = create_bastion_host()
-            if instance_id:
-                print(f"✅ Bastion instance ready: {instance_id}")
-                print(f"🔗 Creating SSM tunnel to: {cluster['Endpoint']['Address']}")
-                if create_ssm_tunnel(instance_id, cluster['Endpoint']['Address']):
-                    print("✅ SSM tunnel established successfully")
-                    os.environ['REDSHIFT_HOST'] = 'localhost'
-                    return 'localhost'
-                else:
-                    print("❌ SSM tunnel failed - falling back to direct connection")
-            else:
-                print("❌ Failed to create bastion host")
-            
-            print(f"⚠️ Using direct connection to: {cluster['Endpoint']['Address']}")
-            return cluster['Endpoint']['Address']
-    except Exception as e:
-        print(f"❌ Error checking existing clusters: {e}")
-        print("🔄 Proceeding to create new cluster...")
-    
-    # If no available cluster found, create new one
-    print(f"🆕 No available cluster found - creating new cluster: {cluster_id}")
-    print("⚙️ Cluster configuration:")
-    print("   - Node Type: ra3.xlplus")
-    print("   - Database: sales_analyst")
-    print("   - Port: 5439")
-    print("   - Public Access: Yes")
-    
-    try:
-=======
         # Check if cluster exists
         response = redshift.describe_clusters(ClusterIdentifier=cluster_id)
         cluster = response['Clusters'][0]
@@ -539,9 +381,59 @@ def create_redshift_cluster():
                 instance_id = create_bastion_host()
                 if instance_id:
                     print(f"✅ Bastion instance ready: {instance_id}")
+                    
+                    # Fix security groups before tunnel
+                    try:
+                        # Get cluster security groups
+                        cluster_response = redshift.describe_clusters(ClusterIdentifier=cluster_id)
+                        cluster = cluster_response['Clusters'][0]
+                        vpc_sgs = cluster.get('VpcSecurityGroups', [])
+                        
+                        # Get bastion security group
+                        bastion_response = ec2.describe_instances(
+                            Filters=[
+                                {'Name': 'tag:Name', 'Values': ['sales-analyst-bastion']},
+                                {'Name': 'instance-state-name', 'Values': ['running']}
+                            ]
+                        )
+                        bastion_sg = bastion_response['Reservations'][0]['Instances'][0]['SecurityGroups'][0]['GroupId']
+                        
+                        # Add bastion access to Redshift security groups
+                        for sg in vpc_sgs:
+                            redshift_sg = sg['VpcSecurityGroupId']
+                            try:
+                                ec2.authorize_security_group_ingress(
+                                    GroupId=redshift_sg,
+                                    IpPermissions=[
+                                        {
+                                            'IpProtocol': 'tcp',
+                                            'FromPort': 5439,
+                                            'ToPort': 5439,
+                                            'UserIdGroupPairs': [{'GroupId': bastion_sg}]
+                                        }
+                                    ]
+                                )
+                                print(f"✅ Added bastion access to Redshift SG: {redshift_sg}")
+                            except Exception as e:
+                                if 'already exists' in str(e):
+                                    print(f"✅ Bastion access already exists for SG: {redshift_sg}")
+                                else:
+                                    print(f"⚠️ SG rule error: {e}")
+                    except Exception as e:
+                        print(f"⚠️ Security group setup error: {e}")
+                    
                     if create_ssm_tunnel(instance_id, cluster_endpoint):
                         print("✅ SSM tunnel established")
-                        return 'localhost'
+                        
+                        # Wait for download to complete
+                        print("Waiting for data download to complete...")
+                        download_thread.join(timeout=60)
+                        
+                        if download_result['path']:
+                            os.environ['NORTHWIND_DATA_PATH'] = download_result['path']
+                            print(f"Data ready at: {download_result['path']}")
+                        
+                        return 'localhost'  # Return localhost for tunnel
                     else:
                         print("❌ SSM tunnel failed")
                         return None
@@ -581,7 +473,6 @@ def create_redshift_cluster():
                 return cluster_endpoint
     except redshift.exceptions.ClusterNotFoundFault:
         # Create cluster in PRIVATE subnet (no public access)
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
         redshift.create_cluster(
             ClusterIdentifier=cluster_id,
             NodeType='ra3.xlplus',
@@ -593,64 +484,15 @@ def create_redshift_cluster():
             Port=5439,
             ClusterSubnetGroupName='default'
         )
-<<<<<<< HEAD
-        print(f"✅ Cluster creation initiated: {cluster_id}")
-    except Exception as e:
-        print(f"❌ Failed to create cluster: {e}")
-        return None
-    
-    # Get local IP and allow access
-    print("🔒 Configuring cluster security...")
-    try:
-        import requests
-        local_ip = requests.get('https://api.ipify.org').text
-        print(f"📍 Authorizing access for IP: {local_ip}")
-        redshift.authorize_cluster_security_group_ingress(
-            ClusterSecurityGroupName='default',
-            CIDRIP=f'{local_ip}/32'
-        )
-        print(f"✅ Authorized access for IP: {local_ip}")
-    except Exception as e:
-        print(f"⚠️ Security group authorization: {e} (may already exist or using VPC)")
-    
-    # Wait for cluster to be available
-    print("⏳ Waiting for cluster to become available...")
-    for attempt in range(60):  # 30 minutes max
-        try:
-=======
         
         # No security group changes needed for private cluster
         
         # Wait for cluster to be available
         while True:
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
             response = redshift.describe_clusters(ClusterIdentifier=cluster_id)
             status = response['Clusters'][0]['ClusterStatus']
-            
             if status == 'available':
                 cluster_endpoint = response['Clusters'][0]['Endpoint']['Address']
-<<<<<<< HEAD
-                print(f"✅ Cluster is ready! Endpoint: {cluster_endpoint}")
-                
-                # Wait for data loading to complete
-                download_thread.join(timeout=60)
-                if download_result['path']:
-                    os.environ['NORTHWIND_DATA_PATH'] = download_result['path']
-                    print(f"✅ Data ready at: {download_result['path']}")
-                
-                return cluster_endpoint
-            elif status in ['creating', 'modifying']:
-                if attempt % 6 == 0:  # Print every 3 minutes
-                    print(f"⏳ Cluster still {status}... (attempt {attempt+1}/60)")
-            else:
-                print(f"⚠️ Unexpected cluster status: {status}")
-                
-        except Exception as e:
-            print(f"❌ Error checking cluster status: {e}")
-            return None
-            
-        time.sleep(30)
-=======
                 print(f"✅ Redshift cluster ready: {cluster_endpoint}")
                 
                 # ALWAYS create bastion for private cluster
@@ -718,7 +560,5 @@ def create_redshift_cluster():
                     print("❌ Bastion creation failed")
                     return None
             time.sleep(30)
->>>>>>> 3f9252b (✅ Complete private Redshift setup with bastion host)
     
-    print("❌ Cluster did not become available within 30 minutes")
     return None
