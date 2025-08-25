@@ -77,7 +77,7 @@ def load_all_metadata(vector_store, show_progress=False):
     Columns: customerid (text), companyname (text), contactname (text), country (text)
     
     Table: orders - Order information  
-    Columns: orderid (integer), customerid (text), orderdate (text), freight (real), shipcountry (text)
+    Columns: orderid (integer), customerid (text), orderdate (text - format: YYYY-MM-DD HH:MM:SS.mmm, use CAST(orderdate AS DATE) for date operations), freight (real), shipcountry (text)
     
     Table: order_details - Order line items
     Columns: orderid (integer), productid (integer), unitprice (real), quantity (integer)
