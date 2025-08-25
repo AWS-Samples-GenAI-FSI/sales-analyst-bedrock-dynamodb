@@ -77,8 +77,8 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
    ```
 
 2. **Wait for automatic setup** (first run takes 5-10 minutes):
-   - ✅ Creates Redshift cluster
-   - ✅ Sets up EC2 bastion host
+   - ✅ Creates **private** Redshift cluster (secure, no public access)
+   - ✅ Sets up EC2 bastion host with SSM tunnel
    - ✅ Downloads Northwind sample data
    - ✅ Loads data into Redshift
    - ✅ Configures AI components
@@ -113,6 +113,8 @@ Once setup is complete, you can ask questions like:
 - ⚠️ **Remember to run cleanup when done!**
 
 ### Security
+- **Private Redshift cluster** - No public internet access
+- **SSM tunnel** - Secure connection through AWS Session Manager
 - Never commit your `.env` file with real credentials to git
 - Your AWS credentials stay on your local machine
 - All AWS resources are created in your own account
@@ -142,8 +144,10 @@ This removes:
 - Run `python cleanup.py` first
 - Try a different AWS region in `.env` (us-west-2, eu-west-1)
 - Ensure you have sufficient AWS service limits
+- Wait for bastion host SSM agent to come online (can take 2-3 minutes)
 
 **"Credentials not found":**
+- Make sure you copied `.env.example` to `.env`: `cp .env.example .env`
 - Make sure `.env` file is in the same directory as `app.py`
 - Verify no extra spaces in your credential values
 - Check that you saved the `.env` file after editing
@@ -153,7 +157,12 @@ This removes:
 - Install requirements: `pip install -r requirements.txt`
 - Try: `python -m streamlit run app.py`
 
-**"SSM tunnel failed" or Session Manager errors:**
+**"Connection failed" or "SSM tunnel failed":**
+- The app uses a private Redshift cluster with bastion host for security
+- Connection goes through localhost:5439 via SSM tunnel
+- If connection fails, wait 2-3 minutes for SSM agent to initialize
+
+**Session Manager plugin installation:**
 - **For macOS users:**
   ```bash
   curl 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip' -o 'sessionmanager-bundle.zip'
@@ -178,10 +187,17 @@ This removes:
 
 **Built with:**
 - **Amazon Bedrock:** AI/ML models for natural language processing
-- **Amazon Redshift:** Data warehouse for fast analytics
+- **Amazon Redshift:** Private data warehouse for fast analytics
+- **EC2 + SSM:** Bastion host with Session Manager tunnel
 - **FAISS:** Vector database for semantic search
 - **Streamlit:** Web interface
 - **LangGraph:** Workflow orchestration
+
+**Security Architecture:**
+```
+Your Computer → SSM Tunnel → EC2 Bastion → Private Redshift Cluster
+(localhost:5439)    (AWS Session Manager)    (No public access)
+```
 
 ---
 
