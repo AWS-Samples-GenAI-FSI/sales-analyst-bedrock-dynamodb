@@ -73,11 +73,13 @@ def load_all_metadata(vector_store, show_progress=False):
     schema_text = """
     Database: sales_analyst, Schema: northwind
     
+    CRITICAL: All date columns are stored as TEXT and MUST be cast to DATE for any date operations!
+    
     Table: customers - Customer information
     Columns: customerid (text), companyname (text), contactname (text), country (text)
     
     Table: orders - Order information  
-    Columns: orderid (integer), customerid (text), orderdate (text - IMPORTANT: ALWAYS use CAST(orderdate AS DATE) for any date operations like DATE_TRUNC), requireddate (text - ALWAYS use CAST(requireddate AS DATE)), shippeddate (text - ALWAYS use CAST(shippeddate AS DATE)), freight (real), shipcountry (text)
+    Columns: orderid (integer), customerid (text), orderdate (TEXT - MUST use CAST(orderdate AS DATE) for DATE_TRUNC, EXTRACT, date operations), requireddate (TEXT - MUST use CAST(requireddate AS DATE)), shippeddate (TEXT - MUST use CAST(shippeddate AS DATE)), freight (real), shipcountry (text)
     
     Table: order_details - Order line items
     Columns: orderid (integer), productid (integer), unitprice (real), quantity (integer)
@@ -92,7 +94,7 @@ def load_all_metadata(vector_store, show_progress=False):
     Columns: supplierid (integer), companyname (text), country (text)
     
     Table: employees - Employee data
-    Columns: employeeid (integer), lastname (text), firstname (text), title (text), birthdate (text - ALWAYS use CAST(birthdate AS DATE)), hiredate (text - ALWAYS use CAST(hiredate AS DATE))
+    Columns: employeeid (integer), lastname (text), firstname (text), title (text), birthdate (TEXT - MUST use CAST(birthdate AS DATE)), hiredate (TEXT - MUST use CAST(hiredate AS DATE))
     
     Table: shippers - Shipping companies
     Columns: shipperid (integer), companyname (text), phone (text)
