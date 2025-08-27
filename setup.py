@@ -43,6 +43,11 @@ def install_amazon_linux():
     commands = [
         "sudo yum update -y",
         "sudo yum install -y git python3 python3-pip python3-devel sqlite-devel gcc gcc-c++ make unzip --allowerasing",
+        "sudo yum remove -y awscli || true",  # Remove old AWS CLI if exists
+        "curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip'",
+        "unzip awscliv2.zip",
+        "sudo ./aws/install",
+        "rm -rf aws awscliv2.zip",
         "python3 -m pip install --upgrade pip setuptools wheel",
         "pip3 install faiss-cpu==1.7.3 --no-cache-dir"
     ]
