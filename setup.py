@@ -42,7 +42,7 @@ def install_amazon_linux():
     
     commands = [
         "sudo yum update -y",
-        "sudo yum install -y git python3 python3-pip python3-devel sqlite-devel gcc gcc-c++ make curl unzip",
+        "sudo yum install -y git python3 python3-pip python3-devel sqlite-devel gcc gcc-c++ make unzip --allowerasing",
         "python3 -m pip install --upgrade pip setuptools wheel",
         "pip3 install faiss-cpu==1.7.3 --no-cache-dir"
     ]
