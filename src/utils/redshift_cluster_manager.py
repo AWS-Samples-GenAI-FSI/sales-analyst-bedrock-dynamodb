@@ -5,6 +5,8 @@ import boto3
 import time
 import os
 import subprocess
+import platform
+import socket
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -200,35 +202,97 @@ sleep 30
         return None
 
 def create_ssm_tunnel(instance_id, redshift_host):
-    """Create SSM port forwarding session."""
+    """Create SSM port forwarding session with Windows compatibility."""
     import subprocess
+    import platform
     
-    # Check if session manager plugin is installed
-    try:
-        subprocess.run(['session-manager-plugin'], capture_output=True, timeout=5)
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        print("Installing Session Manager plugin...")
+    def get_platform():
+        return platform.system().lower()
+    
+    def install_session_manager_plugin():
+        """Install Session Manager plugin based on platform."""
+        system = get_platform()
+        
         try:
-            # Download and install Session Manager plugin
-            subprocess.run(['curl', '-o', '/tmp/sessionmanager-bundle.zip', 
-                          'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip'], 
-                          check=True)
-            subprocess.run(['unzip', '-o', '/tmp/sessionmanager-bundle.zip', '-d', '/tmp/'], check=True)
-            subprocess.run(['sudo', '/tmp/sessionmanager-bundle/install', 
-                          '-i', '/usr/local/sessionmanagerplugin', 
-                          '-b', '/usr/local/bin/session-manager-plugin'], check=True)
-            print("Session Manager plugin installed successfully")
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to install Session Manager plugin: {e}")
-            print("Please install manually:")
-            print("curl 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip' -o 'sessionmanager-bundle.zip'")
-            print("unzip sessionmanager-bundle.zip")
-            print("sudo ./sessionmanager-bundle/install -i /usr/local/sessionmanagerplugin -b /usr/local/bin/session-manager-plugin")
-            return False
+            subprocess.run(['session-manager-plugin'], capture_output=True, timeout=5)
+            return True
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+        
+        print("Installing Session Manager plugin...")
+        
+        if system == 'windows':
+            try:
+                import urllib.request
+                import tempfile
+                
+                url = 'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/windows/SessionManagerPluginSetup.exe'
+                
+                with tempfile.NamedTemporaryFile(suffix='.exe', delete=False) as tmp_file:
+                    urllib.request.urlretrieve(url, tmp_file.name)
+                    subprocess.run([tmp_file.name, '/S'], check=True)
+                    os.unlink(tmp_file.name)
+                
+                print("Session Manager plugin installed successfully")
+                return True
+            except Exception as e:
+                print(f"Failed to install Session Manager plugin on Windows: {e}")
+                print("Please install manually from:")
+                print("https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html")
+                return False
+        
+        elif system == 'darwin':
+            try:
+                subprocess.run(['curl', '-o', '/tmp/sessionmanager-bundle.zip', 
+                              'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip'], 
+                              check=True)
+                subprocess.run(['unzip', '-o', '/tmp/sessionmanager-bundle.zip', '-d', '/tmp/'], check=True)
+                subprocess.run(['sudo', '/tmp/sessionmanager-bundle/install', 
+                              '-i', '/usr/local/sessionmanagerplugin', 
+                              '-b', '/usr/local/bin/session-manager-plugin'], check=True)
+                print("Session Manager plugin installed successfully")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to install Session Manager plugin: {e}")
+                return False
+        
+        else:  # Linux
+            try:
+                subprocess.run(['curl', '-o', '/tmp/session-manager-plugin.rpm',
+                              'https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm'],
+                              check=True)
+                subprocess.run(['sudo', 'yum', 'install', '-y', '/tmp/session-manager-plugin.rpm'], check=True)
+                print("Session Manager plugin installed successfully")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to install Session Manager plugin: {e}")
+                return False
     
-    # Kill any existing session
-    subprocess.run(['pkill', '-f', 'aws ssm start-session'], stderr=subprocess.DEVNULL)
-    time.sleep(2)
+    def kill_existing_sessions():
+        """Kill existing SSM sessions in a cross-platform way."""
+        system = get_platform()
+        
+        if system == 'windows':
+            try:
+                subprocess.run(['taskkill', '/F', '/IM', 'aws.exe'], 
+                             capture_output=True, check=False)
+            except Exception:
+                pass
+        else:
+            try:
+                subprocess.run(['pkill', '-f', 'aws ssm start-session'], 
+                             stderr=subprocess.DEVNULL, check=False)
+            except Exception:
+                pass
+        
+        time.sleep(2)
+    
+    # Install plugin if needed
+    if not install_session_manager_plugin():
+        return False
+    
+    # Kill any existing sessions
+    kill_existing_sessions()
     
     # Wait for SSM to be fully ready (silent)
     time.sleep(60)
@@ -270,13 +334,22 @@ def create_ssm_tunnel(instance_id, redshift_host):
     print(f"Starting SSM session with command: {' '.join(cmd)}")
     
     try:
-        # Start session in background
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE
-        )
+        # Start session in background with Windows compatibility
+        if get_platform() == 'windows':
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+        else:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE
+            )
         
         # Give it time to establish
         print("Waiting for SSM session to establish...")
@@ -289,11 +362,11 @@ def create_ssm_tunnel(instance_id, redshift_host):
             # Test if port forwarding is working
             import socket
             for i in range(15):  # Try for 45 seconds
+                sock = None
                 try:
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.settimeout(3)
                     result = sock.connect_ex(('localhost', 5439))
-                    sock.close()
                     
                     if result == 0:
                         print(f"✅ Port forwarding working on attempt {i+1}")
@@ -304,6 +377,16 @@ def create_ssm_tunnel(instance_id, redshift_host):
                 except Exception as e:
                     print(f"Port test {i+1}/15 error: {e}")
                     time.sleep(3)
+                finally:
+                    if sock:
+                        try:
+                            sock.shutdown(socket.SHUT_RDWR)  # Proper shutdown for Windows
+                        except Exception:
+                            pass
+                        try:
+                            sock.close()
+                        except Exception:
+                            pass
             
             print("❌ Port forwarding test failed after 15 attempts")
             process.terminate()
