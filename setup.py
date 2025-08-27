@@ -81,7 +81,7 @@ def install_ubuntu():
 def install_requirements():
     """Install Python requirements."""
     print("🐍 Installing Python packages...")
-    return run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+    return run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--ignore-installed", "requests"])
 
 def main():
     """Main setup function."""
