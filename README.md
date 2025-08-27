@@ -54,20 +54,15 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 
 ### Step 3: Configure Your AWS Credentials
 
-1. **Copy the example environment file:**
-   ```bash
-   cp .env.example .env
-   ```
+**Open the `.env` file** in any text editor and **replace the placeholders** with your actual AWS credentials:
+```bash
+# Replace these with your actual values from Step 1
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=AKIA... # Your actual Access Key ID
+AWS_SECRET_ACCESS_KEY=... # Your actual Secret Access Key
+```
 
-2. **Open the `.env` file** in any text editor and **replace the placeholders** with your actual AWS credentials:
-   ```bash
-   # Replace these with your actual values from Step 1
-   AWS_REGION=us-east-1
-   AWS_ACCESS_KEY_ID=AKIA... # Your actual Access Key ID
-   AWS_SECRET_ACCESS_KEY=... # Your actual Secret Access Key
-   ```
-
-3. **Save the file**
+**Save the file**
 
 ### Step 4: Run the Application
 
