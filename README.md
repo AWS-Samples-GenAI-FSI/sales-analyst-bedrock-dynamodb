@@ -82,7 +82,12 @@ AWS_SECRET_ACCESS_KEY=... # Your actual Secret Access Key
 
 ### Step 4: Run the Application
 
-1. **Start the app:**
+1. **For EC2 users - Configure Security Group:**
+   - Go to EC2 Console → Security Groups
+   - Edit your EC2's security group
+   - Add inbound rule: **Port 8501**, **Source: Your IP** (or 0.0.0.0/0 for public access)
+
+2. **Start the app:**
    ```bash
    streamlit run app.py
    ```
