@@ -41,13 +41,24 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
 
 ### Step 2: Download and Setup the Application
 
-1. **Clone or Download:**
+1. **Install Git (if missing):**
+   ```bash
+   # Amazon Linux / CentOS / RHEL:
+   sudo yum install -y git
+   
+   # Ubuntu / Debian:
+   sudo apt-get install -y git
+   
+   # Mac/Windows: Git is usually pre-installed
+   ```
+
+2. **Clone the Repository:**
    ```bash
    git clone https://github.com/AWS-Samples-GenAI-FSI/sales-analyst-bedrock-redshift.git
    cd sales-analyst-bedrock-redshift
    ```
 
-2. **Install Dependencies (Auto-Detection):**
+3. **Install Dependencies (Auto-Detection)::**
    ```bash
    python3 setup.py
    ```
