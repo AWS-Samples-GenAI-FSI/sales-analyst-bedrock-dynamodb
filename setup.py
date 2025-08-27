@@ -42,7 +42,7 @@ def install_amazon_linux():
     
     commands = [
         "sudo yum update -y",
-        "sudo yum install -y python3 python3-pip python3-devel sqlite-devel gcc gcc-c++ make curl unzip",
+        "sudo yum install -y git python3 python3-pip python3-devel sqlite-devel gcc gcc-c++ make curl unzip",
         "python3 -m pip install --upgrade pip setuptools wheel",
         "pip3 install faiss-cpu==1.7.3 --no-cache-dir"
     ]
@@ -61,7 +61,7 @@ def install_ubuntu():
     
     commands = [
         "sudo apt-get update",
-        "sudo apt-get install -y python3-dev python3-pip sqlite3 libsqlite3-dev build-essential curl unzip",
+        "sudo apt-get install -y git python3-dev python3-pip sqlite3 libsqlite3-dev build-essential curl unzip",
         "python3 -m pip install --upgrade pip"
     ]
     
