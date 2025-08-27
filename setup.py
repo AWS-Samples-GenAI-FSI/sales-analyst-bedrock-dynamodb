@@ -46,7 +46,7 @@ def install_amazon_linux():
         "sudo yum remove -y awscli || true",  # Remove old AWS CLI if exists
         "curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip'",
         "unzip awscliv2.zip",
-        "sudo ./aws/install",
+        "sudo ./aws/install --update",
         "rm -rf aws awscliv2.zip",
         "python3 -m pip install --upgrade pip wheel --ignore-installed setuptools",
         "pip3 install faiss-cpu==1.7.3 --no-cache-dir"
