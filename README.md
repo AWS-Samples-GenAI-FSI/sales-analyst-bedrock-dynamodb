@@ -47,10 +47,15 @@ A Streamlit application that uses Amazon Bedrock, LangGraph, and FAISS to analyz
    cd sales-analyst-bedrock-redshift
    ```
 
-2. **Install Python Dependencies:**
+2. **Install Dependencies (Auto-Detection):**
    ```bash
-   pip install -r requirements.txt
+   python3 setup.py
    ```
+   
+   This automatically detects your platform and installs the right dependencies:
+   - **Amazon Linux 2023**: Installs SQLite libraries + FAISS fixes
+   - **Ubuntu**: Installs build tools + dependencies  
+   - **Mac/Windows**: Uses standard pip install
 
 ### Step 3: Configure Your AWS Credentials
 
