@@ -48,7 +48,7 @@ def install_amazon_linux():
         "unzip awscliv2.zip",
         "sudo ./aws/install",
         "rm -rf aws awscliv2.zip",
-        "python3 -m pip install --upgrade pip setuptools wheel",
+        "python3 -m pip install --upgrade pip wheel --ignore-installed setuptools",
         "pip3 install faiss-cpu==1.7.3 --no-cache-dir"
     ]
     
