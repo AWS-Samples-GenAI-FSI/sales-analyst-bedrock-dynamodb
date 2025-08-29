@@ -1,117 +1,54 @@
 #!/usr/bin/env python3
 """
-Auto-detection setup script for Sales Analyst
-Detects platform and installs appropriate dependencies
+Setup script for GenAI Sales Analyst with DynamoDB
 """
-import platform
-import subprocess
-import sys
 import os
+import sys
+import subprocess
+import shutil
 
-def detect_platform():
-    """Detect the current platform and distribution."""
-    system = platform.system().lower()
-    
-    if system == 'linux':
-        # Check if it's Amazon Linux
-        try:
-            with open('/etc/os-release', 'r') as f:
-                content = f.read()
-                if 'amazon' in content.lower():
-                    return 'amazon_linux'
-                elif 'ubuntu' in content.lower():
-                    return 'ubuntu'
-                else:
-                    return 'linux'
-        except:
-            return 'linux'
-    
-    return system
-
-def run_command(cmd, shell=False):
-    """Run a command and return success status."""
-    try:
-        subprocess.run(cmd, check=True, shell=shell)
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-def install_amazon_linux():
-    """Install dependencies for Amazon Linux 2023."""
-    print("🚀 Detected Amazon Linux - installing EC2 dependencies...")
-    
-    commands = [
-        "sudo yum update -y",
-        "sudo yum install -y git python3 python3-pip python3-devel sqlite-devel gcc gcc-c++ make unzip --allowerasing",
-        "sudo yum remove -y awscli || true",  # Remove old AWS CLI if exists
-        "curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip'",
-        "unzip awscliv2.zip",
-        "sudo ./aws/install --update",
-        "rm -rf aws awscliv2.zip",
-        "python3 -m pip install --upgrade pip wheel --ignore-installed setuptools",
-        "pip3 install faiss-cpu==1.7.3 --no-cache-dir"
-    ]
-    
-    for cmd in commands:
-        print(f"Running: {cmd}")
-        if not run_command(cmd, shell=True):
-            print(f"❌ Failed: {cmd}")
-            return False
-    
-    return True
-
-def install_ubuntu():
-    """Install dependencies for Ubuntu."""
-    print("🚀 Detected Ubuntu - installing dependencies...")
-    
-    commands = [
-        "sudo apt-get update",
-        "sudo apt-get install -y git python3-dev python3-pip sqlite3 libsqlite3-dev build-essential curl unzip",
-        "python3 -m pip install --upgrade pip"
-    ]
-    
-    for cmd in commands:
-        print(f"Running: {cmd}")
-        if not run_command(cmd, shell=True):
-            print(f"❌ Failed: {cmd}")
-            return False
-    
-    return True
+def check_python_version():
+    """Check if Python version is 3.8 or higher."""
+    if sys.version_info < (3, 8):
+        print("❌ Python 3.8 or higher is required.")
+        print(f"Current version: {sys.version}")
+        sys.exit(1)
+    print(f"✅ Python version: {sys.version.split()[0]}")
 
 def install_requirements():
     """Install Python requirements."""
-    print("🐍 Installing Python packages...")
-    return run_command([sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "--ignore-installed", "requests"])
+    print("📦 Installing Python dependencies...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+        print("✅ Dependencies installed successfully")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to install dependencies: {e}")
+        sys.exit(1)
+
+def setup_env_file():
+    """Create .env file from template if it doesn't exist."""
+    if not os.path.exists('.env'):
+        if os.path.exists('.env.example'):
+            shutil.copy('.env.example', '.env')
+            print("✅ Created .env file from template")
+            print("⚠️  Please edit .env file with your AWS credentials")
+        else:
+            print("❌ .env.example file not found")
+    else:
+        print("✅ .env file already exists")
 
 def main():
     """Main setup function."""
-    print("🔍 Auto-detecting platform...")
+    print("🚀 Setting up GenAI Sales Analyst with DynamoDB...")
     
-    platform_type = detect_platform()
-    print(f"📍 Detected: {platform_type}")
+    check_python_version()
+    install_requirements()
+    setup_env_file()
     
-    success = True
-    
-    if platform_type == 'amazon_linux':
-        success = install_amazon_linux()
-    elif platform_type == 'ubuntu':
-        success = install_ubuntu()
-    elif platform_type in ['darwin', 'windows']:
-        print(f"🍎 Detected {platform_type} - using standard pip install")
-    else:
-        print(f"⚠️  Unknown platform: {platform_type} - trying standard install")
-    
-    if success:
-        success = install_requirements()
-    
-    if success:
-        print("✅ Setup complete!")
-        print("\nNext steps:")
-        print("1. Configure your .env file with AWS credentials")
-        print("2. Run: streamlit run app.py")
-    else:
-        print("❌ Setup failed. Please check errors above.")
-        sys.exit(1)
+    print("\n✅ Setup complete!")
+    print("\nNext steps:")
+    print("1. Edit .env file with your AWS credentials")
+    print("2. Run: streamlit run app.py")
 
 if __name__ == "__main__":
     main()

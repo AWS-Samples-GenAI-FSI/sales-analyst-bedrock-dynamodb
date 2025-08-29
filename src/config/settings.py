@@ -11,16 +11,12 @@ load_dotenv()
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 DEFAULT_MODEL_ID = "amazon.nova-pro-v1:0"
 
-# Redshift settings
-REDSHIFT_ACCOUNT = os.getenv("REDSHIFT_ACCOUNT", "")
-REDSHIFT_USER = os.getenv("REDSHIFT_USER", "")
-REDSHIFT_PASSWORD = os.getenv("REDSHIFT_PASSWORD", "")
-REDSHIFT_WAREHOUSE = os.getenv("REDSHIFT_WAREHOUSE", "COMPUTE_WH")
-REDSHIFT_ROLE = os.getenv("REDSHIFT_ROLE", "ACCOUNTADMIN")
+# DynamoDB settings
+DYNAMODB_REGION = os.getenv("AWS_REGION", "us-east-1")
+DYNAMODB_TABLE_PREFIX = os.getenv("DYNAMODB_TABLE_PREFIX", "")
 
-# Default database and schema
-DEFAULT_DATABASE = "REDSHIFT_SAMPLE_DATA"
-DEFAULT_SCHEMA = "TPCH_SF1"
+# Default table settings
+DEFAULT_BILLING_MODE = "PAY_PER_REQUEST"
 
 # Cache settings
 SCHEMA_CACHE_TTL = 3600  # Cache schema information for 1 hour

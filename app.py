@@ -18,15 +18,14 @@ from src.bedrock.bedrock_helper import BedrockHelper
 from src.vector_store.faiss_manager import FAISSManager
 
 from src.graph.workflow import AnalysisWorkflow
-from src.utils.redshift_connector import (
-    get_redshift_connection, 
+from src.utils.dynamodb_connector import (
     execute_query,
-    get_available_databases,
-    get_available_schemas,
     get_available_tables,
-    get_table_columns
+    get_table_info
 )
-from src.utils.northwind_bootstrapper import bootstrap_northwind, check_northwind_exists
+from src.utils.denormalized_bootstrapper import bootstrap_sales_data, check_sales_exists
+from src.utils.northwind_denormalizer import bootstrap_from_northwind
+from src.utils.dynamodb_bootstrapper import bootstrap_northwind, check_northwind_exists
 
 
 def initialize_components():
@@ -67,42 +66,34 @@ def initialize_components():
 
 def load_all_metadata(vector_store, show_progress=False):
     """
-    Load metadata from Northwind tables.
+    Load metadata from Northwind DynamoDB tables.
     """
-    # Create simple schema context for Northwind
+    # Create schema context for denormalized sales table
     schema_text = """
-    Database: sales_analyst, Schema: northwind
+    DynamoDB Denormalized Sales Data:
     
-    CRITICAL: All date columns are stored as TEXT and MUST be cast to DATE for any date operations!
+    Table: sales_transactions - Complete sales transaction data (NoSQL Document Store)
+    Key: transaction_id (String)
     
-    Table: customers - Customer information
-    Columns: customerid (text), companyname (text), contactname (text), country (text)
+    Available Attributes for Analysis:
+    - Customer Data: customer_id, customer_name, customer_country, customer_city
+    - Product Data: product_id, product_name, category_name, supplier_name, supplier_country
+    - Order Data: order_id, order_date, shipped_date, employee_name
+    - Financial Data: quantity, unit_price, discount, line_total, freight
+    - Shipping: shipper_name
     
-    Table: orders - Order information  
-    Columns: orderid (integer), customerid (text), orderdate (TEXT - MUST use CAST(orderdate AS DATE) for DATE_TRUNC, EXTRACT, date operations), requireddate (TEXT - MUST use CAST(requireddate AS DATE)), shippeddate (TEXT - MUST use CAST(shippeddate AS DATE)), freight (real), shipcountry (text)
+    This denormalized structure allows for fast analytics on:
+    - Revenue by customer, product, category, country
+    - Sales performance by employee, supplier
+    - Order patterns by date, location
+    - All data in single table - no joins needed
     
-    Table: order_details - Order line items
-    Columns: orderid (integer), productid (integer), unitprice (real), quantity (integer)
-    
-    Table: products - Product catalog
-    Columns: productid (integer), productname (text), categoryid (integer), unitprice (real)
-    
-    Table: categories - Product categories
-    Columns: categoryid (integer), categoryname (text), description (text)
-    
-    Table: suppliers - Supplier information
-    Columns: supplierid (integer), companyname (text), country (text)
-    
-    Table: employees - Employee data
-    Columns: employeeid (integer), lastname (text), firstname (text), title (text), birthdate (TEXT - MUST use CAST(birthdate AS DATE)), hiredate (TEXT - MUST use CAST(hiredate AS DATE))
-    
-    Table: shippers - Shipping companies
-    Columns: shipperid (integer), companyname (text), phone (text)
+    Use scan operations to get all transactions, then aggregate client-side.
     """
     
     # Add to vector store
     texts = [schema_text]
-    metadatas = [{'database': 'sales_analyst', 'schema': 'northwind', 'type': 'schema'}]
+    metadatas = [{'database': 'dynamodb', 'tables': 'northwind', 'type': 'schema'}]
     
     # Get embeddings
     embeddings = []
@@ -120,11 +111,11 @@ def load_all_metadata(vector_store, show_progress=False):
         vector_store.index.add(embeddings_array)
         
         if show_progress:
-            st.sidebar.success(f"✅ Loaded Northwind schema metadata")
+            st.sidebar.success(f"✅ Loaded sales DynamoDB metadata")
         
         # Return dummy dataframe
         import pandas as pd
-        return pd.DataFrame({'schema': ['northwind'], 'loaded': [True]})
+        return pd.DataFrame({'tables': ['sales_transactions'], 'loaded': [True]})
     
     return None
 
@@ -190,85 +181,74 @@ def main():
     
     # Header with direct HTML and inline styles
     st.markdown('<h1 style="font-size: 50px; font-weight: 900; color: #0066cc; text-align: left; margin-bottom: 5px; line-height: 1.0;">Sales Data Analyst</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="font-size: 14px; color: #0066cc; margin-top: -5px; margin-bottom: 15px; text-align: left;">(Powered by Amazon Bedrock and Amazon Redshift)</p>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size: 14px; color: #0066cc; margin-top: -5px; margin-bottom: 15px; text-align: left;">(Powered by Amazon Bedrock and Amazon DynamoDB)</p>', unsafe_allow_html=True)
     st.markdown('<div style="border-bottom: 4px double #0066cc; margin-bottom: 30px;"></div>', unsafe_allow_html=True)
     
     # Initialize components
     components = initialize_components()
     
-    # Auto-create Redshift cluster and test connection
+    # Test DynamoDB connection
     try:
-        from src.utils.redshift_cluster_manager import create_redshift_cluster
-        
-        # Test connection first
+        # Test DynamoDB connection
         try:
-            conn = get_redshift_connection()
-            conn.close()
-            st.sidebar.success("✅ Connected to Redshift")
-        except:
-            # Setup needed - do it silently
-            with st.spinner("🚀 Setting up environment..."):
-                endpoint = create_redshift_cluster()
-                if endpoint:
-                    # Tunnel is handled by cluster manager
-                    os.environ['REDSHIFT_HOST'] = endpoint if endpoint != 'localhost' else 'localhost'
-                
-                # Wait for connection silently
-                for i in range(180):  # 6 minutes
-                    try:
-                        conn = get_redshift_connection()
-                        conn.close()
-                        st.sidebar.success("✅ Connected to Redshift")
-                        break
-                    except:
-                        time.sleep(2)
-                else:
-                    st.sidebar.info("🔗 Still connecting... Please refresh in a moment")
-                    st.stop()
+            tables = get_available_tables()
+            st.sidebar.success(f"✅ Connected to DynamoDB ({len(tables)} tables)")
+        except Exception as e:
+            st.sidebar.error(f"❌ DynamoDB connection failed: {str(e)}")
+            st.error("Please check your AWS credentials and region configuration.")
+            st.stop()
         
-        # Auto-create Northwind database if it doesn't exist
-        if not check_northwind_exists():
-            st.sidebar.info("🔄 Setting up Northwind database...")
-            with st.spinner("Creating Northwind database with complete dataset..."):
-                success = bootstrap_northwind(show_progress=True)
-                if success:
-                    st.sidebar.success("✅ Northwind database created successfully!")
-                    # Force metadata reload after database creation
-                    st.session_state.metadata_loaded = False
-                else:
-                    st.sidebar.error("❌ Failed to create Northwind database")
-                    return
+        # Auto-create sales table from Northwind data if it doesn't exist
+        if 'sales_checked' not in st.session_state:
+            if not check_sales_exists():
+                # Check if we need to create Northwind tables first
+                from src.utils.dynamodb_bootstrapper import check_northwind_exists
+                
+                if not check_northwind_exists():
+                    with st.spinner("Downloading complete Northwind dataset from GitHub..."):
+                        northwind_success = bootstrap_northwind(show_progress=False)
+                        if not northwind_success:
+                            st.sidebar.error("❌ Failed to create Northwind tables")
+                            st.session_state.sales_checked = True
+                            return
+                
+                with st.spinner("Creating denormalized sales table..."):
+                    success = bootstrap_from_northwind(show_progress=False)
+                    if success:
+                        st.sidebar.success("✅ Sales table created from Northwind data!")
+                        st.session_state.metadata_loaded = False
+                    else:
+                        st.sidebar.error("❌ Failed to denormalize Northwind data")
+            else:
+                st.sidebar.success("✅ Sales table ready")
+            st.session_state.sales_checked = True
         else:
-            st.sidebar.success("✅ Northwind database ready")
+            st.sidebar.success("✅ Sales table ready")
             
-        # Test database connection only once
+        # Test DynamoDB tables only once
         if 'database_tested' not in st.session_state:
             try:
-                customer_result = execute_query("SELECT COUNT(*) FROM northwind.customers")
-                order_result = execute_query("SELECT COUNT(*) FROM northwind.orders")
-                
-                if customer_result and order_result:
-                    customers = customer_result[0]['count']
-                    orders = order_result[0]['count']
-                    st.sidebar.success(f"✅ Database has {customers} customers, {orders} orders")
-                    st.session_state.database_tested = True
+                if check_sales_exists():
+                    sales_result = execute_query({'operation': 'scan', 'table_name': 'sales_transactions'})
                     
-                    if orders == 0:
-                        st.sidebar.warning("⚠️ No orders found - forcing database recreation")
-                        success = bootstrap_northwind(show_progress=True)
-                        if success:
-                            st.sidebar.success("✅ Database recreated with sample data")
-                            st.session_state.metadata_loaded = False
+                    if sales_result is not None:
+                        transactions = len(sales_result)
+                        st.sidebar.success(f"✅ DynamoDB has {transactions} sales transactions")
+                        st.session_state.database_tested = True
+                    else:
+                        st.sidebar.info("📊 DynamoDB table exists but may be empty")
+                        st.session_state.database_tested = True
                 else:
-                    st.sidebar.warning("⚠️ Database tables may be empty")
+                    st.sidebar.info("📊 DynamoDB ready (no sales table)")
+                    st.session_state.database_tested = True
             except Exception as e:
-                st.sidebar.error(f"❌ Database test failed: {str(e)}")
-                return
+                st.sidebar.error(f"❌ DynamoDB test failed: {str(e)}")
+                st.session_state.database_tested = True
         else:
-            st.sidebar.success("✅ Database ready")
+            st.sidebar.success("✅ DynamoDB ready")
             
     except Exception as e:
-        st.sidebar.error(f"❌ Redshift connection failed: {str(e)}")
+        st.sidebar.error(f"❌ DynamoDB connection failed: {str(e)}")
         return
     
     # Load metadata on startup if not already loaded (runs only once)
@@ -331,22 +311,27 @@ def main():
         - 🚛 **Shippers** - Delivery companies and contacts
         """)
         
-        # Show available databases and schemas
-        with st.expander("Database Explorer", expanded=False):
-            if st.button("Show Databases"):
+        # Show available DynamoDB tables
+        with st.expander("Table Explorer", expanded=False):
+            if st.button("Show Tables"):
                 try:
-                    databases = get_available_databases()
-                    st.write("Available databases:")
-                    st.write(", ".join(databases))
+                    tables = get_available_tables()
+                    st.write("Available DynamoDB tables:")
+                    for table in tables:
+                        st.write(f"- {table}")
+                        # Show table info
+                        table_info = get_table_info(table)
+                        if table_info:
+                            st.write(f"  Items: {table_info.get('item_count', 'Unknown')}")
                 except Exception as e:
-                    st.error(f"Error listing databases: {str(e)}")
+                    st.error(f"Error listing tables: {str(e)}")
     
     # Main content area - use full width for col1
     col1 = st.container()
     
     with col1:
         st.markdown('<p class="subheader">Ask questions about your sales data</p>', unsafe_allow_html=True)
-        st.markdown('<p class="info-text">You can ask about customer orders, product sales, and more.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="info-text">Ask natural language questions about your DynamoDB data.</p>', unsafe_allow_html=True)
         
         # Examples
         with st.expander("💡 Example questions", expanded=False):
@@ -395,10 +380,10 @@ def main():
             if "error" in result:
                 st.error(result.get("friendly_error", result["error"]))
             
-            # Display SQL if generated
-            if "generated_sql" in result:
-                with st.expander("Generated SQL", expanded=True):
-                    st.code(result["generated_sql"], language="sql")
+            # Display generated query if available
+            if "generated_query" in result:
+                with st.expander("Generated DynamoDB Query", expanded=True):
+                    st.json(result["generated_query"])
             
             # Display results if available
             if "query_results" in result:
@@ -417,7 +402,7 @@ def main():
             
             st.session_state.history.append({
                 'question': question,
-                'sql': result.get('generated_sql', ''),
+                'query': result.get('generated_query', {}),
                 'results': result.get('query_results', [])[:10],  # Store only first 10 rows
                 'analysis': result.get('analysis', ''),
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -432,7 +417,7 @@ def main():
             for i, item in enumerate(reversed(st.session_state.history[-5:])):  # Show last 5 queries
                 st.write(f"**{item['timestamp']}**: {item['question']}")
                 if st.button(f"Show details", key=f"history_{i}"):
-                    st.code(item['sql'], language="sql")
+                    st.json(item['query'])
                     st.dataframe(item['results'])
                     st.write(item['analysis'])
                 st.divider()
